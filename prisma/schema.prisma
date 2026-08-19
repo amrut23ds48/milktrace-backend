@@ -1,0 +1,186 @@
+// This is your Prisma schema file for MilkTrace Maharashtra.
+// Learn more: https://pris.ly/d/prisma-schema
+//
+// Architecture: see milktrace-docs/5.md §6–12 and DATABASE_GUIDELINES.md
+//
+// Phase 1 (this migration): Organization, Role, Permission, RolePermission, Facility, User
+// Phase 2 (future):         Farmer, Animal, MilkCollection, Batch, Transfer, Anomaly, etc.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+/// Top-level classification of an Organization.
+enum OrganizationType {
+  COOPERATIVE
+  DAIRY
+  PROCESSOR
+  BUSINESS
+  GOVERNMENT
+  OTHER
+}
+
+/// Lifecycle status shared across most core entities.
+/// Soft-delete strategy: NEVER hard-delete core records (DATABASE_GUIDELINES.md §3).
+enum EntityStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+/// Physical classification of a Facility.
+enum FacilityType {
+  VILLAGE_COLLECTION_CENTER
+  CHILLING_CENTER
+  TALUKA_CENTER
+  DISTRICT_FACILITY
+  PROCESSING_PLANT
+  BUSINESS_RECEIVING_FACILITY
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+/// Represents a top-level operational organization (e.g. a cooperative or dairy).
+/// All Users and Facilities belong to an Organization.
+/// Ref: milktrace-docs/5.md §6
+model Organization {
+  id                  String           @id @default(uuid()) @db.Uuid
+  name                String
+  type                OrganizationType
+  registration_number String?          @unique
+  status              EntityStatus     @default(ACTIVE)
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  // Relations
+  roles      Role[]
+  users      User[]
+  facilities Facility[]
+
+  @@map("organizations")
+}
+
+/// A Role defines a set of permissions within an organization.
+/// System roles (is_system_role = true) are global; custom roles are org-scoped.
+/// Ref: milktrace-docs/5.md §8
+model Role {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  is_system_role  Boolean  @default(false)
+  organization_id String?  @db.Uuid
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  organization Organization?    @relation(fields: [organization_id], references: [id])
+  permissions  RolePermission[]
+  users        User[]
+
+  // Indexes: FK column on organization_id (DATABASE_GUIDELINES.md §4)
+  @@index([organization_id])
+  @@map("roles")
+}
+
+/// A fine-grained capability code (e.g. "batch.dispatch").
+/// This is a static reference table — permissions are seeded, not user-created.
+/// Ref: milktrace-docs/5.md §9
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique // e.g. "batch.view", "batch.dispatch"
+  name        String
+  category    String   // e.g. "BATCH", "COLLECTION", "USER"
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+/// Many-to-many join table between Role and Permission.
+/// Uses a composite PK — no auto-generated id needed.
+/// Ref: milktrace-docs/5.md §10
+model RolePermission {
+  role_id       String @db.Uuid
+  permission_id String @db.Uuid
+
+  // Relations
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
+  // Indexes on both FK columns
+  @@index([role_id])
+  @@index([permission_id])
+  @@map("role_permissions")
+}
+
+/// A physical operational location (Village Center, Chilling Center, etc.).
+/// Supports self-referential parent hierarchy for geographic scoping.
+/// Ref: milktrace-docs/5.md §11–12
+model Facility {
+  id                 String       @id @default(uuid()) @db.Uuid
+  organization_id    String       @db.Uuid
+  parent_facility_id String?      @db.Uuid
+  name               String
+  type               FacilityType
+  district           String
+  taluka             String?
+  village            String?
+  latitude           Decimal?     @db.Decimal(10, 7)
+  longitude          Decimal?     @db.Decimal(10, 7)
+  status             EntityStatus @default(ACTIVE)
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+
+  // Relations
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  parent_facility Facility?    @relation("FacilityHierarchy", fields: [parent_facility_id], references: [id])
+  child_facilities Facility[]  @relation("FacilityHierarchy")
+  users           User[]
+
+  // Indexes: FK columns (DATABASE_GUIDELINES.md §4)
+  @@index([organization_id])
+  @@index([parent_facility_id])
+  @@map("facilities")
+}
+
+/// A system user — scoped to an Organization, a Role, and optionally one Facility.
+/// A user belongs to one facility at a time; re-assignment changes facility_id.
+/// Passwords are NEVER stored in plain text.
+/// Ref: milktrace-docs/5.md §7 | DATABASE_GUIDELINES.md §3 (no plain-text passwords)
+model User {
+  id              String       @id @default(uuid()) @db.Uuid
+  organization_id String       @db.Uuid
+  role_id         String       @db.Uuid
+  facility_id     String?      @db.Uuid // null = not scoped to a single facility (e.g. Super Admin)
+  name            String
+  phone           String?      @unique
+  email           String?      @unique
+  password_hash   String       // bcrypt hash — never expose through APIs
+  status          EntityStatus @default(ACTIVE)
+  last_login_at   DateTime?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organization_id], references: [id])
+  role         Role         @relation(fields: [role_id], references: [id])
+  facility     Facility?    @relation(fields: [facility_id], references: [id])
+
+  // Indexes: FK columns + commonly filtered columns (DATABASE_GUIDELINES.md §4)
+  @@index([organization_id])
+  @@index([role_id])
+  @@index([facility_id])
+  @@map("users")
+}
