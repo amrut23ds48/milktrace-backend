@@ -45,6 +45,18 @@ export async function seedOrgAndRole(): Promise<{ orgId: string; roleId: string 
   return { orgId: org.id, roleId: role.id };
 }
 
+export async function seedFacility(orgId: string) {
+  return await testPrisma.facility.create({
+    data: {
+      organization_id: orgId,
+      name: 'Test Village Center',
+      type: 'VILLAGE_COLLECTION_CENTER',
+      district: 'Pune',
+      status: 'ACTIVE',
+    },
+  });
+}
+
 /**
  * Clean up test rows by IDs to keep tests isolated.
  * Call this in afterEach() / afterAll() within test files.
@@ -53,14 +65,32 @@ export async function cleanupUsers(ids: string[]): Promise<void> {
   await testPrisma.user.deleteMany({ where: { id: { in: ids } } });
 }
 
-export async function cleanupFacilities(ids: string[]): Promise<void> {
-  await testPrisma.facility.deleteMany({ where: { id: { in: ids } } });
+export async function cleanupFacilities(ids?: string[]): Promise<void> {
+  if (ids) {
+    await testPrisma.facility.deleteMany({ where: { id: { in: ids } } });
+  } else {
+    await testPrisma.facility.deleteMany();
+  }
 }
 
-export async function cleanupOrgs(ids: string[]): Promise<void> {
-  // Cascade: users, facilities, roles are deleted by FK constraints
-  await testPrisma.user.deleteMany({ where: { organization_id: { in: ids } } });
-  await testPrisma.facility.deleteMany({ where: { organization_id: { in: ids } } });
-  await testPrisma.role.deleteMany({ where: { organization_id: { in: ids } } });
-  await testPrisma.organization.deleteMany({ where: { id: { in: ids } } });
+export async function cleanupFarmers(ids?: string[]): Promise<void> {
+  if (ids) {
+    await testPrisma.farmer.deleteMany({ where: { id: { in: ids } } });
+  } else {
+    await testPrisma.farmer.deleteMany();
+  }
+}
+
+export async function cleanupOrgs(ids?: string[]): Promise<void> {
+  if (ids) {
+    await testPrisma.user.deleteMany({ where: { organization_id: { in: ids } } });
+    await testPrisma.facility.deleteMany({ where: { organization_id: { in: ids } } });
+    await testPrisma.role.deleteMany({ where: { organization_id: { in: ids } } });
+    await testPrisma.organization.deleteMany({ where: { id: { in: ids } } });
+  } else {
+    await testPrisma.user.deleteMany();
+    await testPrisma.facility.deleteMany();
+    await testPrisma.role.deleteMany();
+    await testPrisma.organization.deleteMany();
+  }
 }
