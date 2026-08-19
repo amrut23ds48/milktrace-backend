@@ -1,15 +1,9 @@
-import express, { Application } from 'express';
+import 'dotenv/config';
+import app from './app';
 
-// ─── App Bootstrap ────────────────────────────────────────────────────────────
-// Business logic will be added in subsequent phases.
-// This file wires together middleware and routes only.
-
-const app: Application = express();
-
-app.use(express.json());
-
-// TODO: Mount routes here in Phase 3
-// e.g. app.use('/api/v1/users', userRoutes);
+// ─── Server Entry Point ───────────────────────────────────────────────────────
+// This file only starts the HTTP server.
+// All middleware, routes, and error handling are configured in app.ts.
 
 const PORT = process.env.PORT ?? 3001;
 
@@ -17,5 +11,3 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[server] Running on http://localhost:${PORT}`);
 });
-
-export default app;

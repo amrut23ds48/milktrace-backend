@@ -1,11 +1,12 @@
-// routes/index.ts
-// ─── API Layer ────────────────────────────────────────────────────────────────
-// Route handlers (Controllers) live here.
-// Each route file should: extract request params → call the relevant Service → return HTTP response.
-// Business logic must NEVER be placed here (see BACKEND_GUIDELINES.md §2).
-//
-// Example usage:
-//   import { Router } from 'express';
-//   const router = Router();
-//   router.get('/', (req, res) => { ... });
-//   export default router;
+import { Router } from 'express';
+import { userRoutes } from './userRoutes';
+import { facilityRoutes } from './facilityRoutes';
+
+// ─── API Route Barrel ─────────────────────────────────────────────────────────
+// All feature routers are mounted here and exported as a single `router`.
+// app.ts mounts this at /api/v1.
+
+export const router = Router();
+
+router.use('/users', userRoutes);
+router.use('/facilities', facilityRoutes);
