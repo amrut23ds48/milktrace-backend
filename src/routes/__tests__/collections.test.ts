@@ -7,7 +7,8 @@ import {
   cleanupOrgs,
   cleanupFarmers,
   disconnectTestPrisma,
-  testPrisma
+  testPrisma,
+  cleanupAll
 } from '../../__tests__/helpers/testPrisma';
 import { hash } from 'bcrypt';
 
@@ -51,11 +52,7 @@ describe('Milk Collection Routes', () => {
   });
 
   afterAll(async () => {
-    await testPrisma.milkCollection.deleteMany();
-    await cleanupFarmers();
-    await testPrisma.user.deleteMany();
-    await cleanupFacilities();
-    await cleanupOrgs();
+    await cleanupAll();
     await disconnectTestPrisma();
   });
 

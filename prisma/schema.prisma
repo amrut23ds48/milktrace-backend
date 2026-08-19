@@ -58,6 +58,45 @@ enum CollectionSession {
   EVENING
 }
 
+enum BatchStatus {
+  CREATED
+  DISPATCHED
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+enum TransferStatus {
+  CREATED
+  DISPATCHED
+  IN_TRANSIT
+  RECEIVED
+  DISCREPANCY
+  CANCELLED
+}
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum InvestigationStatus {
+  NEW
+  INVESTIGATING
+  CONFIRMED
+  FALSE_POSITIVE
+  INCONCLUSIVE
+  RESOLVED
+}
+
+enum BusinessType {
+  PROCESSOR
+  DISTRIBUTOR
+  RETAILER
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 /// Represents a top-level operational organization (e.g. a cooperative or dairy).
@@ -76,6 +115,7 @@ model Organization {
   roles      Role[]
   users      User[]
   facilities Facility[]
+  businesses Business[]
 
   @@map("organizations")
 }
@@ -109,7 +149,7 @@ model Permission {
   id          String   @id @default(uuid()) @db.Uuid
   code        String   @unique // e.g. "batch.view", "batch.dispatch"
   name        String
-  category    String   // e.g. "BATCH", "COLLECTION", "USER"
+  category    String // e.g. "BATCH", "COLLECTION", "USER"
   description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
@@ -157,12 +197,17 @@ model Facility {
   updated_at         DateTime     @updatedAt
 
   // Relations
-  organization    Organization @relation(fields: [organization_id], references: [id])
-  parent_facility Facility?    @relation("FacilityHierarchy", fields: [parent_facility_id], references: [id])
-  child_facilities Facility[]  @relation("FacilityHierarchy")
-  users           User[]
-  farmers         Farmer[]
+  organization     Organization     @relation(fields: [organization_id], references: [id])
+  parent_facility  Facility?        @relation("FacilityHierarchy", fields: [parent_facility_id], references: [id])
+  child_facilities Facility[]       @relation("FacilityHierarchy")
+  users            User[]
+  farmers          Farmer[]
   milk_collections MilkCollection[]
+
+  source_batches        Batch[]    @relation("SourceFacility")
+  destination_batches   Batch[]    @relation("DestinationFacility")
+  source_transfers      Transfer[] @relation("TransferSource")
+  destination_transfers Transfer[] @relation("TransferDestination")
 
   // Indexes: FK columns (DATABASE_GUIDELINES.md §4)
   @@index([organization_id])
@@ -182,18 +227,20 @@ model User {
   name            String
   phone           String?      @unique
   email           String?      @unique
-  password_hash   String       // bcrypt hash — never expose through APIs
+  password_hash   String // bcrypt hash — never expose through APIs
   status          EntityStatus @default(ACTIVE)
   last_login_at   DateTime?
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organization_id], references: [id])
-  role         Role         @relation(fields: [role_id], references: [id])
-  facility     Facility?    @relation(fields: [facility_id], references: [id])
-  milk_collections MilkCollection[]
+  organization         Organization         @relation(fields: [organization_id], references: [id])
+  role                 Role                 @relation(fields: [role_id], references: [id])
+  facility             Facility?            @relation(fields: [facility_id], references: [id])
+  milk_collections     MilkCollection[]
   quality_measurements QualityMeasurement[]
+  investigations       Investigation[]      @relation("AssignedInvestigator")
+  audits               AuditLog[]
 
   // Indexes: FK columns + commonly filtered columns (DATABASE_GUIDELINES.md §4)
   @@index([organization_id])
@@ -219,9 +266,9 @@ model Farmer {
   updated_at           DateTime                 @updatedAt
 
   // Relations
-  collection_center    Facility                 @relation(fields: [collection_center_id], references: [id])
-  animals              Animal[]
-  milk_collections     MilkCollection[]
+  collection_center Facility         @relation(fields: [collection_center_id], references: [id])
+  animals           Animal[]
+  milk_collections  MilkCollection[]
 
   @@index([collection_center_id])
   @@map("farmers")
@@ -232,8 +279,8 @@ model Farmer {
 model Animal {
   id              String       @id @default(uuid()) @db.Uuid
   farmer_id       String       @db.Uuid
-  species_id      String?      // References Species, kept simple for now
-  breed_id        String?      // References Breed, kept simple for now
+  species_id      String? // References Species, kept simple for now
+  breed_id        String? // References Breed, kept simple for now
   identifier      String
   sex             String
   approximate_age Int?
@@ -242,7 +289,7 @@ model Animal {
   updated_at      DateTime     @updatedAt
 
   // Relations
-  farmer          Farmer       @relation(fields: [farmer_id], references: [id])
+  farmer Farmer @relation(fields: [farmer_id], references: [id])
 
   @@index([farmer_id])
   @@map("animals")
@@ -269,6 +316,7 @@ model MilkCollection {
   facility             Facility             @relation(fields: [facility_id], references: [id])
   operator             User                 @relation(fields: [operator_id], references: [id])
   quality_measurements QualityMeasurement[]
+  batch_items          BatchItem[]
 
   @@index([farmer_id])
   @@index([facility_id])
@@ -279,25 +327,181 @@ model MilkCollection {
 /// Quality measurements for a collection or batch.
 /// Ref: milktrace-docs/5.md §18
 model QualityMeasurement {
-  id               String         @id @default(uuid()) @db.Uuid
-  collection_id    String         @db.Uuid
-  batch_id         String?        @db.Uuid // Nullable placeholder for Phase 5
-  fat_percent      Decimal?       @db.Decimal(5, 2)
-  snf_percent      Decimal?       @db.Decimal(5, 2)
-  density          Decimal?       @db.Decimal(5, 2)
-  temperature      Decimal?       @db.Decimal(5, 2)
-  water_estimate   Decimal?       @db.Decimal(5, 2)
+  id               String   @id @default(uuid()) @db.Uuid
+  collection_id    String   @db.Uuid
+  batch_id         String?  @db.Uuid // Nullable placeholder for Phase 5
+  fat_percent      Decimal? @db.Decimal(5, 2)
+  snf_percent      Decimal? @db.Decimal(5, 2)
+  density          Decimal? @db.Decimal(5, 2)
+  temperature      Decimal? @db.Decimal(5, 2)
+  water_estimate   Decimal? @db.Decimal(5, 2)
   other_parameters Json?
-  measured_at      DateTime       @default(now())
+  measured_at      DateTime @default(now())
   device_id        String?
-  operator_id      String?        @db.Uuid
+  operator_id      String?  @db.Uuid
 
   // Relations
-  collection       MilkCollection @relation(fields: [collection_id], references: [id])
-  operator         User?          @relation(fields: [operator_id], references: [id])
+  collection MilkCollection @relation(fields: [collection_id], references: [id])
+  operator   User?          @relation(fields: [operator_id], references: [id])
 
   @@index([collection_id])
   @@index([batch_id])
   @@index([operator_id])
   @@map("quality_measurements")
+}
+
+// ─── Phase 6 Models (Traceability & Logistics) ────────────────────────────────
+
+model Batch {
+  id                      String      @id @default(uuid()) @db.Uuid
+  source_facility_id      String      @db.Uuid
+  destination_facility_id String?     @db.Uuid
+  quantity_liters         Decimal     @db.Decimal(10, 2)
+  status                  BatchStatus @default(CREATED)
+  created_at              DateTime    @default(now())
+  dispatched_at           DateTime?
+  received_at             DateTime?
+
+  // Relations
+  source_facility      Facility    @relation("SourceFacility", fields: [source_facility_id], references: [id])
+  destination_facility Facility?   @relation("DestinationFacility", fields: [destination_facility_id], references: [id])
+  items                BatchItem[]
+  transfers            Transfer[]
+
+  @@index([source_facility_id])
+  @@index([destination_facility_id])
+  @@map("batches")
+}
+
+model BatchItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  batch_id        String   @db.Uuid
+  collection_id   String   @db.Uuid
+  quantity_liters Decimal  @db.Decimal(10, 2)
+  created_at      DateTime @default(now())
+
+  // Relations
+  batch      Batch          @relation(fields: [batch_id], references: [id])
+  collection MilkCollection @relation(fields: [collection_id], references: [id])
+
+  @@index([batch_id])
+  @@index([collection_id])
+  @@map("batch_items")
+}
+
+model Transfer {
+  id                      String         @id @default(uuid()) @db.Uuid
+  batch_id                String         @db.Uuid
+  source_facility_id      String         @db.Uuid
+  destination_facility_id String         @db.Uuid
+  dispatched_quantity     Decimal        @db.Decimal(10, 2)
+  received_quantity       Decimal?       @db.Decimal(10, 2)
+  status                  TransferStatus @default(CREATED)
+  dispatched_at           DateTime       @default(now())
+  received_at             DateTime?
+  vehicle_number          String?
+  driver_name             String?
+
+  // Relations
+  batch                Batch    @relation(fields: [batch_id], references: [id])
+  source_facility      Facility @relation("TransferSource", fields: [source_facility_id], references: [id])
+  destination_facility Facility @relation("TransferDestination", fields: [destination_facility_id], references: [id])
+
+  @@index([batch_id])
+  @@index([source_facility_id])
+  @@index([destination_facility_id])
+  @@map("transfers")
+}
+
+model Business {
+  id              String       @id @default(uuid()) @db.Uuid
+  organization_id String       @db.Uuid
+  name            String
+  business_type   BusinessType
+  status          EntityStatus @default(ACTIVE)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  // Relations
+  organization  Organization           @relation(fields: [organization_id], references: [id])
+  verifications BusinessVerification[]
+
+  @@index([organization_id])
+  @@map("businesses")
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model BusinessVerification {
+  id              String             @id @default(uuid()) @db.Uuid
+  business_id     String             @db.Uuid
+  document_type   String
+  document_number String
+  status          VerificationStatus @default(PENDING)
+  verified_at     DateTime?
+  created_at      DateTime           @default(now())
+
+  // Relations
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id])
+  @@map("business_verifications")
+}
+
+model AnomalyEvent {
+  id           String          @id @default(uuid()) @db.Uuid
+  anomaly_type String // e.g. "QUANTITY_SPIKE", "FAT_DROP"
+  severity     AnomalySeverity
+  risk_score   Int
+  entity_type  String // e.g. "FARMER", "BATCH", "TRANSFER"
+  entity_id    String          @db.Uuid
+  status       EntityStatus    @default(ACTIVE)
+  details      Json?
+  created_at   DateTime        @default(now())
+
+  // Relations
+  investigations Investigation[]
+
+  @@index([entity_type, entity_id])
+  @@map("anomaly_events")
+}
+
+model Investigation {
+  id          String              @id @default(uuid()) @db.Uuid
+  anomaly_id  String              @db.Uuid
+  assigned_to String?             @db.Uuid
+  status      InvestigationStatus @default(NEW)
+  conclusion  String?
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+
+  // Relations
+  anomaly      AnomalyEvent @relation(fields: [anomaly_id], references: [id])
+  investigator User?        @relation("AssignedInvestigator", fields: [assigned_to], references: [id])
+
+  @@index([anomaly_id])
+  @@index([assigned_to])
+  @@map("investigations")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actor_user_id String?  @db.Uuid
+  action        String // e.g. "BATCH_CREATED", "TRANSFER_DISPATCHED"
+  entity_type   String
+  entity_id     String   @db.Uuid
+  old_values    Json?
+  new_values    Json?
+  created_at    DateTime @default(now())
+
+  // Relations
+  actor User? @relation(fields: [actor_user_id], references: [id])
+
+  @@index([entity_type, entity_id])
+  @@index([actor_user_id])
+  @@map("audit_logs")
 }
