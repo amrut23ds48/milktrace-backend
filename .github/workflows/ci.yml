@@ -19,7 +19,7 @@ jobs:
           POSTGRES_PASSWORD: milktrace_dev
           POSTGRES_DB: milktrace
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -27,7 +27,7 @@ jobs:
           --health-retries 5
           
     env:
-      DATABASE_URL: postgresql://milktrace:milktrace_dev@localhost:5432/milktrace
+      DATABASE_URL: postgresql://milktrace:milktrace_dev@localhost:5433/milktrace
       JWT_SECRET: super_secret_test_key
       JWT_EXPIRES_IN: 7d
 

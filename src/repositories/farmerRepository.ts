@@ -1,4 +1,4 @@
-import { PrismaClient, Farmer } from '../generated/prisma/client';
+import { PrismaClient, Farmer, FarmerRegistrationStatus } from '../generated/prisma/client';
 import { CreateFarmerInput } from '../types/farmer.types';
 import { prisma } from '../lib/prisma';
 
@@ -27,3 +27,11 @@ export async function findFarmerById(id: string): Promise<Farmer | null> {
     where: { id },
   });
 }
+
+export async function updateFarmerStatus(id: string, status: FarmerRegistrationStatus): Promise<Farmer> {
+  return await prisma.farmer.update({
+    where: { id },
+    data: { registration_status: status },
+  });
+}
+

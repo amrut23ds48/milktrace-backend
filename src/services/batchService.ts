@@ -3,6 +3,8 @@ import { MilkCollection } from '../generated/prisma/client';
 import { CreateBatchRequest } from '../types/batch.types';
 import { ValidationError, NotFoundError } from '../lib/errors';
 import { prisma } from '../lib/prisma';
+import { BatchStatus } from '../generated/prisma/client';
+import { logAction } from './auditLogService';
 
 export class BatchService {
   async createBatch(data: CreateBatchRequest) {
@@ -44,6 +46,23 @@ export class BatchService {
     // 5. Create the batch
     return batchRepository.createBatch(data, totalQuantity);
   }
+
+  async dispatchBatch(batchId: string, actorUserId?: string) {
+    const batch = await prisma.batch.findUnique({ where: { id: batchId } });
+    if (!batch) throw new NotFoundError(`Batch with id ${batchId} not found`);
+    if (batch.status !== BatchStatus.CREATED) {
+      throw new ValidationError('Only CREATED batches can be dispatched');
+    }
+    
+    const updated = await prisma.batch.update({
+      where: { id: batchId },
+      data: { status: BatchStatus.DISPATCHED, dispatched_at: new Date() }
+    });
+
+    await logAction('Batch', batchId, 'DISPATCH', batch, updated, actorUserId);
+    return updated;
+  }
 }
+
 
 export const batchService = new BatchService();

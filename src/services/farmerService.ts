@@ -1,7 +1,8 @@
 import { CreateFarmerInput, FarmerResponse } from '../types/farmer.types';
-import { createFarmer, findFarmerByCode } from '../repositories/farmerRepository';
-import { ConflictError, ValidationError } from '../lib/errors';
+import { createFarmer, findFarmerByCode, findFarmerById, updateFarmerStatus } from '../repositories/farmerRepository';
+import { ConflictError, ValidationError, NotFoundError } from '../lib/errors';
 import { findFacilityById } from '../repositories/facilityRepository';
+import { FarmerRegistrationStatus } from '../generated/prisma/client';
 
 export async function registerFarmer(input: CreateFarmerInput): Promise<FarmerResponse> {
   if (!input.farmer_code || !input.name || !input.collection_center_id) {
@@ -33,3 +34,44 @@ export async function registerFarmer(input: CreateFarmerInput): Promise<FarmerRe
     updated_at: farmer.updated_at,
   };
 }
+
+export async function approveFarmer(farmerId: string): Promise<FarmerResponse> {
+  const farmer = await findFarmerById(farmerId);
+  if (!farmer) throw new NotFoundError(`Farmer with id ${farmerId} not found`);
+
+  const updated = await updateFarmerStatus(farmerId, FarmerRegistrationStatus.APPROVED);
+
+  return {
+    id: updated.id,
+    farmer_code: updated.farmer_code,
+    name: updated.name,
+    phone: updated.phone,
+    village: updated.village,
+    district: updated.district,
+    registration_status: updated.registration_status,
+    collection_center_id: updated.collection_center_id,
+    created_at: updated.created_at,
+    updated_at: updated.updated_at,
+  };
+}
+
+export async function suspendFarmer(farmerId: string, reason?: string): Promise<FarmerResponse> {
+  const farmer = await findFarmerById(farmerId);
+  if (!farmer) throw new NotFoundError(`Farmer with id ${farmerId} not found`);
+
+  const updated = await updateFarmerStatus(farmerId, FarmerRegistrationStatus.SUSPENDED);
+
+  return {
+    id: updated.id,
+    farmer_code: updated.farmer_code,
+    name: updated.name,
+    phone: updated.phone,
+    village: updated.village,
+    district: updated.district,
+    registration_status: updated.registration_status,
+    collection_center_id: updated.collection_center_id,
+    created_at: updated.created_at,
+    updated_at: updated.updated_at,
+  };
+}
+

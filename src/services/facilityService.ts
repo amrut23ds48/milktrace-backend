@@ -1,6 +1,8 @@
 import { findFacilityById } from '../repositories/facilityRepository';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { FacilityResponse } from '../types/facility.types';
+import { prisma } from '../lib/prisma';
+import { logAction } from './auditLogService';
 
 // ─── Facility Service ─────────────────────────────────────────────────────────
 // Contains all business logic for facility operations.
@@ -35,3 +37,25 @@ export async function getFacility(id: string): Promise<FacilityResponse> {
     longitude: facility.longitude?.toString() ?? null,
   };
 }
+
+export async function updateFacility(id: string, data: any, actorUserId?: string) {
+  if (!UUID_REGEX.test(id)) {
+    throw new ValidationError(`'${id}' is not a valid facility id (expected UUID v4)`);
+  }
+
+  const facility = await prisma.facility.findUnique({ where: { id } });
+  if (!facility) throw new NotFoundError('Facility', id);
+
+  const updated = await prisma.facility.update({
+    where: { id },
+    data
+  });
+
+  await logAction('Facility', id, 'UPDATE', facility, updated, actorUserId);
+  return {
+    ...updated,
+    latitude: updated.latitude?.toString() ?? null,
+    longitude: updated.longitude?.toString() ?? null,
+  };
+}
+

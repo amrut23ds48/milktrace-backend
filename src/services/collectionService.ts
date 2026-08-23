@@ -3,6 +3,7 @@ import { createCollection } from '../repositories/collectionRepository';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { findFarmerById } from '../repositories/farmerRepository';
 import { findFacilityById } from '../repositories/facilityRepository';
+import { FarmerRegistrationStatus } from '../generated/prisma/client';
 
 export async function recordCollection(input: CreateCollectionInput): Promise<CollectionResponse> {
   if (input.quantity_liters <= 0) {
@@ -12,6 +13,13 @@ export async function recordCollection(input: CreateCollectionInput): Promise<Co
   const farmer = await findFarmerById(input.farmer_id);
   if (!farmer) {
     throw new NotFoundError(`Farmer with id ${input.farmer_id} not found`);
+  }
+  
+  if (farmer.registration_status === FarmerRegistrationStatus.SUSPENDED) {
+    throw new ValidationError('Cannot collect from suspended farmer');
+  }
+  if (farmer.registration_status === FarmerRegistrationStatus.PENDING) {
+    throw new ValidationError('Cannot collect from pending farmer');
   }
 
   const facility = await findFacilityById(input.facility_id);
