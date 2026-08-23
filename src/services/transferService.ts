@@ -5,6 +5,9 @@ import { prisma } from '../lib/prisma';
 
 export class TransferService {
   async createTransfer(data: CreateTransferRequest) {
+    if (!data.batch_id) {
+      throw new ValidationError('batch_id is required');
+    }
     // 1. Fetch batch to validate it exists
     const batch = await prisma.batch.findUnique({
       where: { id: data.batch_id }

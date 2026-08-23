@@ -3,6 +3,7 @@ import app from '../../app';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { testPrisma } from '../../__tests__/helpers/testPrisma';
 import bcrypt from 'bcrypt';
+import { generateTestToken } from '../../__tests__/helpers/auth';
 
 describe('Batch Routes', () => {
   let token: string;
@@ -93,8 +94,10 @@ describe('Batch Routes', () => {
 
   describe('POST /api/v1/batches', () => {
     it('should create a new batch and link collections', async () => {
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/batches')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           source_facility_id: sourceFacilityId,
           destination_facility_id: destFacilityId,
@@ -111,8 +114,10 @@ describe('Batch Routes', () => {
     });
 
     it('should fail if a collection does not exist', async () => {
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/batches')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           source_facility_id: sourceFacilityId,
           collection_ids: ['00000000-0000-0000-0000-000000000000']
@@ -158,8 +163,10 @@ describe('Batch Routes', () => {
         }
       });
 
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/batches')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           source_facility_id: sourceFacilityId,
           collection_ids: [otherCol.id]

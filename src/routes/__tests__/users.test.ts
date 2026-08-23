@@ -6,6 +6,7 @@ import {
   cleanupOrgs,
   disconnectTestPrisma,
 } from '../../__tests__/helpers/testPrisma';
+import { generateTestToken } from '../../__tests__/helpers/auth';
 
 // ─── POST /api/v1/users ───────────────────────────────────────────────────────
 // Integration tests for user creation. Written BEFORE implementation (TDD Red phase).
@@ -29,8 +30,10 @@ describe('POST /api/v1/users', () => {
   });
 
   it('should create a user and return 201 with safe user data', async () => {
+    const token = generateTestToken('SUPER_ADMIN');
     const res = await request(app)
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Priya Sharma',
         email: 'priya.sharma@test.com',
@@ -53,8 +56,10 @@ describe('POST /api/v1/users', () => {
   });
 
   it('should return 400 when required fields are missing', async () => {
+    const token = generateTestToken('SUPER_ADMIN');
     const res = await request(app)
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         // missing name, password, organizationId, roleId
         email: 'incomplete@test.com',
@@ -69,8 +74,10 @@ describe('POST /api/v1/users', () => {
   });
 
   it('should return 400 when password is too short', async () => {
+    const token = generateTestToken('SUPER_ADMIN');
     const res = await request(app)
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Test User',
         email: 'short.password@test.com',
@@ -88,10 +95,12 @@ describe('POST /api/v1/users', () => {
 
   it('should return 409 when email already exists', async () => {
     const email = 'duplicate.email@test.com';
+    const token = generateTestToken('SUPER_ADMIN');
 
     // First creation (should succeed)
     await request(app)
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'User One',
         email,
@@ -103,6 +112,7 @@ describe('POST /api/v1/users', () => {
     // Second creation with same email (should conflict)
     const res = await request(app)
       .post('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'User Two',
         email,

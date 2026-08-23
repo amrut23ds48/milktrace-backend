@@ -9,6 +9,12 @@ export async function recordCollection(input: CreateCollectionInput): Promise<Co
   if (input.quantity_liters <= 0) {
     throw new ValidationError('Quantity must be greater than 0');
   }
+  if (!input.farmer_id) {
+    throw new ValidationError('farmer_id is required');
+  }
+  if (!input.facility_id) {
+    throw new ValidationError('facility_id is required');
+  }
 
   const farmer = await findFarmerById(input.farmer_id);
   if (!farmer) {

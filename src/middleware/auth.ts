@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 // Secret from environment or fallback for dev
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod';
+const getJwtSecret = () => process.env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod';
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -14,7 +14,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     const token = authHeader.split(' ')[1];
     
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
 
     // Attach to request
     req.user = {

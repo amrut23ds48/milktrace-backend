@@ -12,6 +12,7 @@ import {
   cleanupAll
 } from '../../__tests__/helpers/testPrisma';
 import { hash } from 'bcrypt';
+import { generateTestToken } from '../../__tests__/helpers/auth';
 
 // ─── POST /api/v1/collections ──────────────────────────────────────────────────
 // Integration tests for milk collections.
@@ -47,6 +48,7 @@ describe('Milk Collection Routes', () => {
         farmer_code: 'F-COL-1001',
         name: 'Test Farmer',
         collection_center_id: facilityId,
+        registration_status: 'APPROVED'
       }
     });
     farmerId = farmer.id;
@@ -69,7 +71,8 @@ describe('Milk Collection Routes', () => {
         collection_timestamp: new Date().toISOString(),
       };
 
-      const response = await request(app).post('/api/v1/collections').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/collections').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -88,7 +91,8 @@ describe('Milk Collection Routes', () => {
         collection_timestamp: new Date().toISOString(),
       };
 
-      const response = await request(app).post('/api/v1/collections').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/collections').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Quantity must be greater than 0');
@@ -105,7 +109,8 @@ describe('Milk Collection Routes', () => {
         collection_timestamp: new Date().toISOString(),
       };
 
-      const response = await request(app).post('/api/v1/collections').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/collections').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(404);
       expect(response.body.message).toContain('Farmer');

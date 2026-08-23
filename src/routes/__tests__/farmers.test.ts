@@ -9,6 +9,7 @@ import {
   cleanupFarmers,
   disconnectTestPrisma,
 } from '../../__tests__/helpers/testPrisma';
+import { generateTestToken } from '../../__tests__/helpers/auth';
 
 // ─── POST /api/v1/farmers ─────────────────────────────────────────────────────
 // Integration tests for farmer registration. Written BEFORE implementation.
@@ -41,7 +42,8 @@ describe('Farmer Routes', () => {
         collection_center_id: facilityId,
       };
 
-      const response = await request(app).post('/api/v1/farmers').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/farmers').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -57,7 +59,8 @@ describe('Farmer Routes', () => {
         // missing farmer_code and collection_center_id
       };
 
-      const response = await request(app).post('/api/v1/farmers').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/farmers').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error', true);
@@ -72,7 +75,8 @@ describe('Farmer Routes', () => {
         collection_center_id: facilityId,
       };
 
-      const response = await request(app).post('/api/v1/farmers').send(payload);
+      const token = generateTestToken('SUPER_ADMIN');
+      const response = await request(app).post('/api/v1/farmers').set('Authorization', `Bearer ${token}`).send(payload);
 
       expect(response.status).toBe(409);
       expect(response.body).toHaveProperty('error', true);

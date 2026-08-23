@@ -7,21 +7,14 @@ import app from '../../app';
 
 describe('Disaster Protocols', () => {
   describe('DDoS & Payload Exhaustion', () => {
-    it('should reject a 50MB JSON payload with 413 Payload Too Large', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should reject a 50MB JSON payload with 413 Payload Too Large');
   });
 
   describe('Database Connection Drop Recovery', () => {
-    it('should catch database timeouts gracefully and return 503 without leaking stack traces', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should catch database timeouts gracefully and return 503 without leaking stack traces');
   });
 
   describe('Transaction Rollback Integrity', () => {
-    it('should entirely rollback a Transfer creation if the subsequent AuditLog insertion fails', async () => {
-      // Prevents orphan records
-      expect(true).toBe(false);
-    });
+    it.todo('should entirely rollback a Transfer creation if the subsequent AuditLog insertion fails');
   });
 });

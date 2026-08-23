@@ -3,6 +3,7 @@ import app from '../../app';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { testPrisma } from '../../__tests__/helpers/testPrisma';
 import bcrypt from 'bcrypt';
+import { generateTestToken } from '../../__tests__/helpers/auth';
 
 describe('Transfer Routes', () => {
   let sourceFacilityId: string;
@@ -67,8 +68,10 @@ describe('Transfer Routes', () => {
 
   describe('POST /api/v1/transfers', () => {
     it('should create a new transfer and update batch status', async () => {
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/transfers')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           batch_id: batchId,
           source_facility_id: sourceFacilityId,
@@ -91,8 +94,10 @@ describe('Transfer Routes', () => {
     });
 
     it('should fail if batch does not exist', async () => {
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/transfers')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           batch_id: '00000000-0000-0000-0000-000000000000',
           source_facility_id: sourceFacilityId,
@@ -107,8 +112,10 @@ describe('Transfer Routes', () => {
 
     it('should fail if batch is already dispatched', async () => {
       // Re-dispatching the same batch should fail
+      const token = generateTestToken('SUPER_ADMIN');
       const res = await request(app)
         .post('/api/v1/transfers')
+        .set('Authorization', `Bearer ${token}`)
         .send({
           batch_id: batchId,
           source_facility_id: sourceFacilityId,

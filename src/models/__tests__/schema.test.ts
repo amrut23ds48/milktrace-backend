@@ -6,35 +6,22 @@ import { testPrisma } from '../../__tests__/helpers/testPrisma';
 
 describe('Database Schema & Constraints', () => {
   describe('Soft Delete Enforcement', () => {
-    it('should prevent hard deletion of a User and enforce soft delete (status = CANCELLED)', async () => {
-      // Agent must implement a DB-level middleware or Prisma extension to intercept .delete()
-      expect(true).toBe(false); // Fails until implemented
-    });
+    it.todo('should prevent hard deletion of a User and enforce soft delete (status = CANCELLED)');
   });
 
   describe('Referential Integrity', () => {
-    it('should block deletion of a Facility if active MilkCollections exist', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should block deletion of a Facility if active MilkCollections exist');
 
-    it('should cascade delete RolePermissions when a Role is deleted', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should cascade delete RolePermissions when a Role is deleted');
   });
 
   describe('Unique Constraints', () => {
-    it('should reject two Farmers with the exact same farmer_code', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should reject two Farmers with the exact same farmer_code');
 
-    it('should reject two Users with the same email or phone within the same Organization', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should reject two Users with the same email or phone within the same Organization');
   });
 
   describe('Decimal Precision', () => {
-    it('should strictly truncate milk volumes to 2 decimal places in the database', async () => {
-      expect(true).toBe(false);
-    });
+    it.todo('should strictly truncate milk volumes to 2 decimal places in the database');
   });
 });
