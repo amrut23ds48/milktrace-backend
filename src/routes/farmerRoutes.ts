@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { requireAuth, requirePermission } from '../middleware/auth';
 import { CreateFarmerInput } from '../types/farmer.types';
 import { registerFarmer } from '../services/farmerService';
 
@@ -8,7 +9,7 @@ export const farmerRoutes = Router();
  * POST /api/v1/farmers
  * Register a new farmer.
  */
-farmerRoutes.post('/', async (req: Request, res: Response, next: NextFunction) => {
+farmerRoutes.post('/', requireAuth, requirePermission('farmer.create'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input: CreateFarmerInput = req.body as CreateFarmerInput;
     const farmer = await registerFarmer(input);

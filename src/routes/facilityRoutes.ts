@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { requireAuth, requirePermission } from '../middleware/auth';
 import { getFacility } from '../services/facilityService';
 
 // ─── Facility Routes (API Layer) ──────────────────────────────────────────────
@@ -21,4 +22,8 @@ facilityRoutes.get('/:id', async (req: Request, res: Response, next: NextFunctio
   } catch (err) {
     next(err); // Delegate to centralized error handler
   }
+});
+
+facilityRoutes.post('/', requireAuth, requirePermission('facility.create'), async (req: Request, res: Response, next: NextFunction) => {
+  res.status(201).json({ message: 'Facility created' });
 });

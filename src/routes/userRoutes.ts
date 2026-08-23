@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { requireAuth, requirePermission } from '../middleware/auth';
 import { createUser } from '../services/userService';
 import { CreateUserInput } from '../types/user.types';
 
@@ -14,7 +15,7 @@ export const userRoutes = Router();
  * Body: CreateUserInput
  * Returns: 201 SafeUser (no password_hash)
  */
-userRoutes.post('/', async (req: Request, res: Response, next: NextFunction) => {
+userRoutes.post('/', requireAuth, requirePermission('user.create'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const input: CreateUserInput = req.body as CreateUserInput;
     const user = await createUser(input);
