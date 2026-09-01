@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Application } from 'express';
+import cors from 'cors';
 import { errorHandler } from './middleware/errorHandler';
 import { router } from './routes';
 
@@ -10,6 +11,7 @@ import { router } from './routes';
 const app: Application = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
+app.use(cors());
 app.use(express.json());
 
 // ─── Routes ───────────────────────────────────────────────────────────────────

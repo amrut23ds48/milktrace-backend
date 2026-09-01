@@ -12,6 +12,7 @@ export async function createCollection(input: CreateCollectionInput): Promise<Mi
       session: input.session,
       quantity_liters: input.quantity_liters,
       collection_timestamp: new Date(input.collection_timestamp),
+    },
   });
 }
 
