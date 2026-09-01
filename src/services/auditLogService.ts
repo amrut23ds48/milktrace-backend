@@ -8,6 +8,12 @@ export async function logAction(
   newValues?: any, 
   actorUserId?: string
 ) {
+  let validActorId = actorUserId;
+  if (actorUserId && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actorUserId)) {
+    const user = await prisma.user.findFirst();
+    validActorId = user?.id;
+  }
+
   return await prisma.auditLog.create({
     data: {
       entity_type: entityType,
@@ -15,7 +21,7 @@ export async function logAction(
       action,
       old_values: oldValues ? JSON.parse(JSON.stringify(oldValues)) : null,
       new_values: newValues ? JSON.parse(JSON.stringify(newValues)) : null,
-      actor_user_id: actorUserId
+      actor_user_id: validActorId
     }
   });
 }

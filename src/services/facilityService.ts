@@ -1,4 +1,4 @@
-import { findFacilityById, findAllFacilities } from '../repositories/facilityRepository';
+import { findFacilityById, findAllFacilities, createFacility as repoCreateFacility } from '../repositories/facilityRepository';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { FacilityResponse } from '../types/facility.types';
 import { prisma } from '../lib/prisma';
@@ -66,5 +66,17 @@ export async function getFacilities(): Promise<FacilityResponse[]> {
     latitude: facility.latitude?.toString() ?? null,
     longitude: facility.longitude?.toString() ?? null,
   }));
+}
+
+export async function createFacility(data: any): Promise<FacilityResponse> {
+  if (!data.name || !data.type || !data.district || !data.organization_id) {
+    throw new ValidationError('Missing required facility fields');
+  }
+  const created = await repoCreateFacility(data);
+  return {
+    ...created,
+    latitude: created.latitude?.toString() ?? null,
+    longitude: created.longitude?.toString() ?? null,
+  };
 }
 

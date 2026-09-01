@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { roleRoutes } from './roleRoutes';
 import { userRoutes } from './userRoutes';
 import { facilityRoutes } from './facilityRoutes';
 import { farmerRoutes } from './farmerRoutes';
@@ -15,6 +16,7 @@ import { anomalyRoutes } from './anomalyRoutes';
 export const router = Router();
 
 router.use('/users', userRoutes);
+router.use('/roles', roleRoutes);
 router.use('/facilities', facilityRoutes);
 router.use('/farmers', farmerRoutes);
 router.use('/collections', collectionRoutes);

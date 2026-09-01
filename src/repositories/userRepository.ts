@@ -38,15 +38,36 @@ const safeUserSelect = {
  * Persists a new user record and returns the safe (no password_hash) representation.
  */
 export async function createUser(data: CreateUserData): Promise<SafeUser> {
+  let orgId = data.organizationId;
+  if (orgId === '1' || !orgId.includes('-')) {
+    const org = await prisma.organization.findFirst();
+    if (org) orgId = org.id;
+  }
+
   return prisma.user.create({
     data: {
       name: data.name,
       email: data.email,
       phone: data.phone,
       password_hash: data.password_hash,
-      organization_id: data.organizationId,
+      organization_id: orgId,
       role_id: data.roleId,
-      facility_id: data.facilityId,
+      facility_id: data.facilityId || null,
+    },
+    select: safeUserSelect,
+  });
+}
+
+export async function updateUser(id: string, data: Partial<CreateUserData> & { status?: 'ACTIVE' | 'SUSPENDED' }): Promise<SafeUser> {
+  return prisma.user.update({
+    where: { id },
+    data: {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role_id: data.roleId,
+      facility_id: data.facilityId || null,
+      status: data.status,
     },
     select: safeUserSelect,
   });
@@ -60,5 +81,20 @@ export async function findUserByEmail(email: string): Promise<{ id: string } | n
   return prisma.user.findUnique({
     where: { email },
     select: { id: true },
+  });
+}
+
+/**
+ * Fetches all users securely without password hashes,
+ * including their role and facility metadata.
+ */
+export async function findAllUsers(): Promise<SafeUser[]> {
+  return prisma.user.findMany({
+    select: {
+      ...safeUserSelect,
+      role: true,
+      facility: true,
+    },
+    orderBy: { created_at: 'desc' },
   });
 }

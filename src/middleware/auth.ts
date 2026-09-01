@@ -20,7 +20,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
         roleId: 'SUPER_ADMIN_ROLE_ID',
         organizationId: '1',
         facilityId: null,
-        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create'],
+        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create'],
       };
       return next();
     }
@@ -49,6 +49,11 @@ export const requirePermission = (requiredPermission: string) => {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      // Super Admin bypass (Super Admins have 'system.view' which gives them god mode)
+      if (req.user.permissions.includes('system.view')) {
+        return next();
       }
 
       // Check if user has the specific permission string

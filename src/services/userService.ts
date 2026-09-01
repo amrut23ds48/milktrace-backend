@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { createUser as repoCreateUser, findUserByEmail } from '../repositories/userRepository';
+import { createUser as repoCreateUser, findUserByEmail, findAllUsers, updateUser as repoUpdateUser } from '../repositories/userRepository';
 import { ValidationError, ConflictError } from '../lib/errors';
 import { CreateUserInput, SafeUser } from '../types/user.types';
 
@@ -59,4 +59,16 @@ export async function createUser(input: CreateUserInput): Promise<SafeUser> {
     roleId: input.roleId,
     facilityId: input.facilityId,
   });
+}
+
+export async function getUsers(): Promise<SafeUser[]> {
+  return findAllUsers();
+}
+
+export async function updateUser(id: string, data: any): Promise<SafeUser> {
+  return repoUpdateUser(id, data);
+}
+
+export async function deleteUser(id: string): Promise<SafeUser> {
+  return repoUpdateUser(id, { status: 'SUSPENDED' });
 }

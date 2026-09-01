@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth, requirePermission } from '../middleware/auth';
-import { getFacility, getFacilities } from '../services/facilityService';
+import { getFacility, getFacilities, createFacility, updateFacility } from '../services/facilityService';
 
 // ─── Facility Routes (API Layer) ──────────────────────────────────────────────
 // Handles HTTP concerns only: extract params → call service → return response.
@@ -25,13 +25,36 @@ facilityRoutes.get('/:id', async (req: Request, res: Response, next: NextFunctio
 });
 
 facilityRoutes.post('/', requireAuth, requirePermission('facility.create'), async (req: Request, res: Response, next: NextFunction) => {
-  res.status(201).json({ message: 'Facility created' });
+  try {
+    const facility = await createFacility(req.body);
+    res.status(201).json(facility);
+  } catch (err) {
+    next(err);
+  }
 });
 
 facilityRoutes.get('/', requireAuth, requirePermission('facility.view'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const facilities = await getFacilities();
     res.status(200).json(facilities);
+  } catch (err) {
+    next(err);
+  }
+});
+
+facilityRoutes.put('/:id', requireAuth, requirePermission('facility.update'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const facility = await updateFacility(req.params.id as string, req.body, req.user?.userId);
+    res.status(200).json(facility);
+  } catch (err) {
+    next(err);
+  }
+});
+
+facilityRoutes.delete('/:id', requireAuth, requirePermission('facility.delete'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const facility = await updateFacility(req.params.id as string, { status: 'CANCELLED' }, req.user?.userId);
+    res.status(200).json({ message: 'Facility deleted (soft delete)', facility });
   } catch (err) {
     next(err);
   }
