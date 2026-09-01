@@ -1,4 +1,4 @@
-import { findFacilityById } from '../repositories/facilityRepository';
+import { findFacilityById, findAllFacilities } from '../repositories/facilityRepository';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { FacilityResponse } from '../types/facility.types';
 import { prisma } from '../lib/prisma';
@@ -57,5 +57,14 @@ export async function updateFacility(id: string, data: any, actorUserId?: string
     latitude: updated.latitude?.toString() ?? null,
     longitude: updated.longitude?.toString() ?? null,
   };
+}
+
+export async function getFacilities(): Promise<FacilityResponse[]> {
+  const facilities = await findAllFacilities();
+  return facilities.map(facility => ({
+    ...facility,
+    latitude: facility.latitude?.toString() ?? null,
+    longitude: facility.longitude?.toString() ?? null,
+  }));
 }
 

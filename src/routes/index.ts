@@ -6,6 +6,7 @@ import { collectionRoutes } from './collectionRoutes';
 import { batchRoutes } from './batchRoutes';
 import { transferRoutes } from './transferRoutes';
 import { authRoutes } from './authRoutes';
+import { anomalyRoutes } from './anomalyRoutes';
 
 // ─── API Route Barrel ─────────────────────────────────────────────────────────
 // All feature routers are mounted here and exported as a single `router`.
@@ -20,3 +21,4 @@ router.use('/collections', collectionRoutes);
 router.use('/batches', batchRoutes);
 router.use('/transfers', transferRoutes);
 router.use('/auth', authRoutes);
+router.use('/anomalies', anomalyRoutes);

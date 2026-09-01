@@ -58,6 +58,13 @@ export class BatchRepository {
       }
     });
   }
+
+  async getAllBatches() {
+    return prisma.batch.findMany({
+      include: { items: true },
+      orderBy: { created_at: 'desc' }
+    });
+  }
 }
 
 export const batchRepository = new BatchRepository();

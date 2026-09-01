@@ -1,5 +1,5 @@
 import { CreateCollectionInput, CollectionResponse } from '../types/collection.types';
-import { createCollection } from '../repositories/collectionRepository';
+import { createCollection, findAllCollections } from '../repositories/collectionRepository';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { findFarmerById } from '../repositories/farmerRepository';
 import { findFacilityById } from '../repositories/facilityRepository';
@@ -49,3 +49,21 @@ export async function recordCollection(input: CreateCollectionInput): Promise<Co
     updated_at: collection.updated_at,
   };
 }
+
+export async function getCollections(): Promise<CollectionResponse[]> {
+  const collections = await findAllCollections();
+  return collections.map(c => ({
+    id: c.id,
+    collection_code: c.collection_code,
+    farmer_id: c.farmer_id,
+    facility_id: c.facility_id,
+    operator_id: c.operator_id,
+    session: c.session as CollectionResponse['session'],
+    quantity_liters: Number(c.quantity_liters),
+    collection_timestamp: c.collection_timestamp,
+    status: c.status,
+    created_at: c.created_at,
+    updated_at: c.updated_at,
+  }));
+}
+

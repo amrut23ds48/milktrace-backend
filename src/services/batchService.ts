@@ -62,6 +62,10 @@ export class BatchService {
     await logAction('Batch', batchId, 'DISPATCH', batch, updated, actorUserId);
     return updated;
   }
+
+  async getAllBatches() {
+    return batchRepository.getAllBatches();
+  }
 }
 
 

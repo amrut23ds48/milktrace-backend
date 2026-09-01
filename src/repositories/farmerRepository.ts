@@ -35,3 +35,9 @@ export async function updateFarmerStatus(id: string, status: FarmerRegistrationS
   });
 }
 
+export async function findAllFarmers(): Promise<Farmer[]> {
+  return await prisma.farmer.findMany({
+    orderBy: { created_at: 'desc' }
+  });
+}
+

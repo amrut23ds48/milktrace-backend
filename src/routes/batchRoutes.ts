@@ -19,4 +19,13 @@ router.post('/', requireAuth, requirePermission('batch.create'), async (req: Req
   }
 });
 
+router.get('/', requireAuth, requirePermission('batch.view'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const batches = await batchService.getAllBatches();
+    res.status(200).json(batches);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as batchRoutes };

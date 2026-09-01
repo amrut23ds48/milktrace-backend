@@ -13,3 +13,9 @@ export async function findFacilityById(id: string): Promise<Facility | null> {
     where: { id },
   });
 }
+
+export async function findAllFacilities(): Promise<Facility[]> {
+  return prisma.facility.findMany({
+    orderBy: { created_at: 'desc' },
+  });
+}

@@ -12,6 +12,11 @@ export async function createCollection(input: CreateCollectionInput): Promise<Mi
       session: input.session,
       quantity_liters: input.quantity_liters,
       collection_timestamp: new Date(input.collection_timestamp),
-    },
+  });
+}
+
+export async function findAllCollections(): Promise<MilkCollection[]> {
+  return await prisma.milkCollection.findMany({
+    orderBy: { collection_timestamp: 'desc' }
   });
 }

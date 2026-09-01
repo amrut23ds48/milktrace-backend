@@ -1,5 +1,5 @@
 import { CreateFarmerInput, FarmerResponse } from '../types/farmer.types';
-import { createFarmer, findFarmerByCode, findFarmerById, updateFarmerStatus } from '../repositories/farmerRepository';
+import { createFarmer, findFarmerByCode, findFarmerById, updateFarmerStatus, findAllFarmers } from '../repositories/farmerRepository';
 import { ConflictError, ValidationError, NotFoundError } from '../lib/errors';
 import { findFacilityById } from '../repositories/facilityRepository';
 import { FarmerRegistrationStatus } from '../generated/prisma/client';
@@ -75,3 +75,18 @@ export async function suspendFarmer(farmerId: string, reason?: string): Promise<
   };
 }
 
+export async function getFarmers(): Promise<FarmerResponse[]> {
+  const farmers = await findAllFarmers();
+  return farmers.map(f => ({
+    id: f.id,
+    farmer_code: f.farmer_code,
+    name: f.name,
+    phone: f.phone,
+    village: f.village,
+    district: f.district,
+    registration_status: f.registration_status,
+    collection_center_id: f.collection_center_id,
+    created_at: f.created_at,
+    updated_at: f.updated_at,
+  }));
+}

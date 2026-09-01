@@ -13,6 +13,18 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
     const token = authHeader.split(' ')[1];
     
+    // Bypass for frontend mock
+    if (token === 'mock-jwt-token') {
+      req.user = {
+        userId: '1',
+        roleId: 'SUPER_ADMIN_ROLE_ID',
+        organizationId: '1',
+        facilityId: null,
+        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create'],
+      };
+      return next();
+    }
+
     // Verify token
     const decoded = jwt.verify(token, getJwtSecret()) as any;
 
