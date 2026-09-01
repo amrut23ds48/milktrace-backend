@@ -20,7 +20,18 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
         roleId: 'SUPER_ADMIN_ROLE_ID',
         organizationId: '1',
         facilityId: null,
-        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create'],
+        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create', 'animal.view', 'animal.update'],
+      };
+      return next();
+    }
+
+    if (token === 'mock-jwt-token-village') {
+      req.user = {
+        userId: '2',
+        roleId: 'VILLAGE_ADMIN_ROLE_ID',
+        organizationId: '1',
+        facilityId: '1',
+        permissions: ['collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'farmer.update', 'facility.view', 'animal.view', 'animal.update'],
       };
       return next();
     }

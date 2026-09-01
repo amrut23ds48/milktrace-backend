@@ -258,6 +258,7 @@ model Farmer {
   farmer_code          String                   @unique
   name                 String
   phone                String?
+  aadhar_number        String?                  @unique
   village              String?
   district             String?
   registration_status  FarmerRegistrationStatus @default(PENDING)
@@ -279,11 +280,14 @@ model Farmer {
 model Animal {
   id              String       @id @default(uuid()) @db.Uuid
   farmer_id       String       @db.Uuid
-  species_id      String? // References Species, kept simple for now
-  breed_id        String? // References Breed, kept simple for now
+  species         String       // e.g. COW, BUFFALO
+  breed           String?      // e.g. HF, Gir, Murrah
   identifier      String
   sex             String
   approximate_age Int?
+  expected_daily_yield Decimal? @db.Decimal(5, 2)
+  expected_fat         Decimal? @db.Decimal(5, 2)
+  expected_snf         Decimal? @db.Decimal(5, 2)
   status          EntityStatus @default(ACTIVE)
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt

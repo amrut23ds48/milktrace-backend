@@ -142,6 +142,28 @@ async function main() {
     }
     await prisma.farmer.createMany({ data: farmersData });
 
+    // 1-4 Animals per Farmer
+    const animalsData = [];
+    for (const farmer of farmersData) {
+      const numAnimals = faker.number.int({ min: 1, max: 4 });
+      for (let j = 0; j < numAnimals; j++) {
+        animalsData.push({
+          id: faker.string.uuid(),
+          farmer_id: farmer.id,
+          species: faker.helpers.arrayElement(['COW', 'BUFFALO']),
+          breed: faker.helpers.arrayElement(['HF', 'Gir', 'Murrah', 'Jersey']),
+          identifier: `TAG-${faker.string.alphanumeric(6).toUpperCase()}`,
+          sex: 'FEMALE',
+          approximate_age: faker.number.int({ min: 2, max: 8 }),
+          expected_daily_yield: faker.number.float({ min: 8, max: 20, fractionDigits: 1 }),
+          expected_fat: faker.number.float({ min: 3, max: 7, fractionDigits: 1 }),
+          expected_snf: faker.number.float({ min: 7.5, max: 9.5, fractionDigits: 1 }),
+          created_at: farmer.created_at
+        });
+      }
+    }
+    await prisma.animal.createMany({ data: animalsData });
+
     // 30 Days of Milk Collections
     let collectionsData: any[] = [];
     const now = new Date();
