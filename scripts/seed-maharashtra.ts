@@ -109,7 +109,6 @@ async function main() {
         organization_id: org.id,
         role_id: vcRole.id,
         name: `VC Operator ${district}`,
-        password_hash: 'dummyhash', // Bypass in local
         facility_id: villageCenters[0]!.id
       }
     });
@@ -119,7 +118,6 @@ async function main() {
         organization_id: org.id,
         role_id: ccRole.id,
         name: `CC Operator ${district}`,
-        password_hash: 'dummyhash',
         facility_id: chillingCenters[0]!.id
       }
     });
