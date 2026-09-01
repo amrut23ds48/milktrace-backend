@@ -35,24 +35,16 @@ export async function recordCollection(input: CreateCollectionInput): Promise<Co
 
   const collection = await createCollection(input);
 
-  return {
-    id: collection.id,
-    collection_code: collection.collection_code,
-    farmer_id: collection.farmer_id,
-    facility_id: collection.facility_id,
-    operator_id: collection.operator_id,
-    session: collection.session,
-    quantity_liters: Number(collection.quantity_liters),
-    collection_timestamp: collection.collection_timestamp,
-    status: collection.status,
-    created_at: collection.created_at,
-    updated_at: collection.updated_at,
-  };
+  return mapCollectionToResponse(collection);
 }
 
 export async function getCollections(): Promise<CollectionResponse[]> {
   const collections = await findAllCollections();
-  return collections.map(c => ({
+  return collections.map(c => mapCollectionToResponse(c));
+}
+
+function mapCollectionToResponse(c: any): CollectionResponse {
+  return {
     id: c.id,
     collection_code: c.collection_code,
     farmer_id: c.farmer_id,
@@ -64,6 +56,16 @@ export async function getCollections(): Promise<CollectionResponse[]> {
     status: c.status,
     created_at: c.created_at,
     updated_at: c.updated_at,
-  }));
+    farmer: c.farmer,
+    facility: c.facility,
+    operator: c.operator,
+    quality_measurements: c.quality_measurements?.map((qm: any) => ({
+      fat_percent: qm.fat_percent ? Number(qm.fat_percent) : null,
+      snf_percent: qm.snf_percent ? Number(qm.snf_percent) : null,
+      density: qm.density ? Number(qm.density) : null,
+      temperature: qm.temperature ? Number(qm.temperature) : null,
+      water_estimate: qm.water_estimate ? Number(qm.water_estimate) : null,
+    }))
+  };
 }
 

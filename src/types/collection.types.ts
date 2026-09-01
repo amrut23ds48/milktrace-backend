@@ -8,6 +8,13 @@ export interface CreateCollectionInput {
   session: CollectionSession;
   quantity_liters: number;
   collection_timestamp: Date | string;
+  quality?: {
+    fat_percent?: number;
+    snf_percent?: number;
+    density?: number;
+    temperature?: number;
+    water_estimate?: number;
+  };
 }
 
 export interface CollectionResponse {
@@ -22,4 +29,8 @@ export interface CollectionResponse {
   status: EntityStatus;
   created_at: Date;
   updated_at: Date;
+  farmer?: any;
+  facility?: any;
+  operator?: any;
+  quality_measurements?: any[];
 }
