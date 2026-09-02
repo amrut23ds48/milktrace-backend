@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma';
 
 // Secret from environment or fallback for dev
 const getJwtSecret = () => process.env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod';
 
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -13,26 +14,56 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
     const token = authHeader.split(' ')[1];
     
-    // Bypass for frontend mock
+    // Dev bypass: auto-login as Super Admin from the real database
     if (token === 'mock-jwt-token') {
-      req.user = {
-        userId: '1',
-        roleId: 'SUPER_ADMIN_ROLE_ID',
-        organizationId: '1',
-        facilityId: null,
-        permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create', 'animal.view', 'animal.update'],
-      };
+      const superAdmin = await prisma.user.findFirst({
+        where: { role: { name: 'Super Admin' } },
+        include: { role: { include: { permissions: true } } }
+      });
+      if (superAdmin) {
+        req.user = {
+          userId: superAdmin.id,
+          roleId: superAdmin.role_id,
+          organizationId: superAdmin.organization_id,
+          facilityId: superAdmin.facility_id,
+          permissions: superAdmin.role.permissions.map((rp: any) => rp.permission?.code ?? rp.permission),
+        };
+      } else {
+        // Fallback if no super admin found
+        req.user = {
+          userId: 'dev-super-admin',
+          roleId: 'SUPER_ADMIN',
+          organizationId: 'dev-org',
+          facilityId: null,
+          permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create'],
+        };
+      }
       return next();
     }
 
+    // Dev bypass: auto-login as Village Admin from the real database
     if (token === 'mock-jwt-token-village') {
-      req.user = {
-        userId: '2',
-        roleId: 'VILLAGE_ADMIN_ROLE_ID',
-        organizationId: '1',
-        facilityId: '1',
-        permissions: ['collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'farmer.update', 'facility.view', 'animal.view', 'animal.update'],
-      };
+      const villageAdmin = await prisma.user.findFirst({
+        where: { role: { name: 'Village Admin' } },
+        include: { role: { include: { permissions: true } } }
+      });
+      if (villageAdmin) {
+        req.user = {
+          userId: villageAdmin.id,
+          roleId: villageAdmin.role_id,
+          organizationId: villageAdmin.organization_id,
+          facilityId: villageAdmin.facility_id,
+          permissions: villageAdmin.role.permissions.map((rp: any) => rp.permission?.code ?? rp.permission),
+        };
+      } else {
+        req.user = {
+          userId: 'dev-village-admin',
+          roleId: 'VILLAGE_ADMIN',
+          organizationId: 'dev-org',
+          facilityId: null,
+          permissions: ['collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'facility.view'],
+        };
+      }
       return next();
     }
 
