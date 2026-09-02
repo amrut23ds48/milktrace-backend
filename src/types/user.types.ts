@@ -4,10 +4,10 @@ import { OrganizationType, EntityStatus, FacilityType } from '../generated/prism
 
 /** Input shape for creating a new user (from the API request body). */
 export interface CreateUserInput {
+  id?: string;
   name: string;
   email?: string;
   phone?: string;
-  password: string; // plain text — will be hashed by the service before storage
   organizationId: string;
   roleId: string;
   facilityId?: string;

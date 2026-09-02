@@ -13,7 +13,7 @@ async function main() {
       await updateFacility(facility.id, { name: facility.name + ' Updated' }, '1');
       console.log('updateFacility OK');
     } catch (e) {
-      console.error('updateFacility FAILED:', e.message || e);
+      console.error('updateFacility FAILED:', (e as any).message || e);
     }
   }
 
@@ -23,7 +23,7 @@ async function main() {
       await updateUser(user.id, { name: user.name + ' Updated' });
       console.log('updateUser OK');
     } catch (e) {
-      console.error('updateUser FAILED:', e.message || e);
+      console.error('updateUser FAILED:', (e as any).message || e);
     }
     
     try {
@@ -31,7 +31,7 @@ async function main() {
       await deleteUser(user.id);
       console.log('deleteUser OK');
     } catch (e) {
-      console.error('deleteUser FAILED:', e.message || e);
+      console.error('deleteUser FAILED:', (e as any).message || e);
     }
   }
 }
