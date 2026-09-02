@@ -1,5 +1,13 @@
+import 'dotenv/config';
 import { OrganizationType, FacilityType, CollectionSession, AnomalySeverity, FarmerRegistrationStatus, BatchStatus } from '../src/generated/prisma/client';
-import { prisma } from '../src/lib/prisma';
+import { PrismaClient } from '../src/generated/prisma/client';
+
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL || '',
+});
+const prisma = new PrismaClient({ adapter });
 import { faker } from '@faker-js/faker';
 
 const DISTRICTS = [
@@ -14,6 +22,13 @@ const DISTRICTS = [
 async function main() {
   console.log('Starting massive data seed for Maharashtra...');
   
+  // SAFEGUARD: Prevent accidental execution on production
+  if (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('supabase')) {
+    console.error('🚨 DANGER: You are trying to run the seed script against a production or Supabase database!');
+    console.error('This script contains cascading deletes that will wipe all data. Execution aborted.');
+    process.exit(1);
+  }
+
   console.log('Cleaning existing data (Cascading Deletes)...');
   await prisma.auditLog.deleteMany();
   await prisma.investigation.deleteMany();
@@ -68,6 +83,22 @@ async function main() {
   const saRole = await prisma.role.create({ data: { name: 'Super Admin', organization_id: org.id } });
   const vcRole = await prisma.role.create({ data: { name: 'Village Admin', organization_id: org.id } });
   const ccRole = await prisma.role.create({ data: { name: 'Chilling Admin', organization_id: org.id } });
+
+  const superAdminId = process.env.SUPER_ADMIN_UUID;
+  if (!superAdminId) {
+    console.warn("⚠️ No SUPER_ADMIN_UUID provided in .env! Skipping Super Admin creation.");
+  } else {
+    console.log(`Creating Super Admin profile for Auth UUID: ${superAdminId}...`);
+    await prisma.user.create({
+      data: {
+        id: superAdminId,
+        organization_id: org.id,
+        role_id: saRole.id,
+        name: 'Super Admin',
+        email: 'admin@milktrace.local',
+      }
+    });
+  }
 
   const BATCH_SIZE = 5000;
   

@@ -10,10 +10,10 @@ import { SafeUser } from '../types/user.types';
  * by the service layer before this is called.
  */
 export interface CreateUserData {
+  id?: string;
   name: string;
   email?: string;
   phone?: string;
-  password_hash: string;
   organizationId: string;
   roleId: string;
   facilityId?: string;
@@ -46,10 +46,10 @@ export async function createUser(data: CreateUserData): Promise<SafeUser> {
 
   return prisma.user.create({
     data: {
+      id: data.id,
       name: data.name,
       email: data.email,
       phone: data.phone,
-      password_hash: data.password_hash,
       organization_id: orgId,
       role_id: data.roleId,
       facility_id: data.facilityId || null,
