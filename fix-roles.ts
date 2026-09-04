@@ -36,11 +36,11 @@ async function fixRoles() {
           'collection.view', 'collection.create', 'collection.update',
           'farmer.view', 'farmer.create', 'farmer.update',
           'facility.view',
-          'batch.view', 'batch.create'
+          'batch.view', 'batch.create', 'transfer.create'
         ].includes(p.code));
       } else if (role.name === 'Chilling Admin') {
         assignedPerms = permissions.filter(p => [
-          'batch.view', 'batch.dispatch',
+          'batch.view', 'batch.create', 'batch.dispatch', 'transfer.create',
           'facility.view'
         ].includes(p.code));
       }

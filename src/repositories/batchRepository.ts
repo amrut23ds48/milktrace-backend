@@ -59,8 +59,22 @@ export class BatchRepository {
     });
   }
 
-  async getAllBatches() {
+  async getAllBatches(user?: any) {
+    let whereClause = {};
+    // If the user is scoped to a facility (e.g. Village Admin or Chilling Admin),
+    // only show batches where they are the source or destination.
+    // Super Admins don't have a facilityId, so they see everything.
+    if (user && user.facilityId) {
+      whereClause = {
+        OR: [
+          { source_facility_id: user.facilityId },
+          { destination_facility_id: user.facilityId }
+        ]
+      };
+    }
+
     return prisma.batch.findMany({
+      where: whereClause,
       include: { 
         items: true,
         source_facility: { select: { name: true, type: true } },

@@ -63,8 +63,8 @@ export class BatchService {
     return updated;
   }
 
-  async getAllBatches() {
-    return batchRepository.getAllBatches();
+  async getAllBatches(user?: any) {
+    return batchRepository.getAllBatches(user);
   }
 }
 
