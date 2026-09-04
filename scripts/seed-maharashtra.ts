@@ -1,5 +1,13 @@
 import 'dotenv/config';
-import { OrganizationType, FacilityType, CollectionSession, AnomalySeverity, FarmerRegistrationStatus, BatchStatus } from '../src/generated/prisma/client';
+import {
+  OrganizationType,
+  FacilityType,
+  CollectionSession,
+  AnomalySeverity,
+  FarmerRegistrationStatus,
+  BatchStatus,
+  TransferStatus
+} from '../src/generated/prisma/client';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcrypt';
@@ -244,30 +252,97 @@ async function main() {
       await prisma.milkCollection.createMany({ data: collectionsData });
     }
 
-    // Generate Batches
+    // Generate Batches and Transfers
     let batchesData: any[] = [];
+    let transfersData: any[] = [];
+    
+    // Create some District Facilities and Businesses first to connect them
+    const districtFacilities = [];
+    for (let i=0; i<2; i++) {
+      districtFacilities.push(await prisma.facility.create({
+        data: {
+          name: `${district} District Plant ${i+1}`,
+          type: FacilityType.DISTRICT_FACILITY,
+          district,
+          organization_id: org.id,
+          latitude: faker.location.latitude({ max: 22, min: 15 }),
+          longitude: faker.location.longitude({ max: 80, min: 72 }),
+        }
+      }));
+    }
+    const businesses = [];
+    for (let i=0; i<2; i++) {
+      businesses.push(await prisma.facility.create({
+        data: {
+          name: `${district} Business Corp ${i+1}`,
+          type: FacilityType.BUSINESS_RECEIVING_FACILITY,
+          district,
+          organization_id: org.id,
+          latitude: faker.location.latitude({ max: 22, min: 15 }),
+          longitude: faker.location.longitude({ max: 80, min: 72 }),
+        }
+      }));
+    }
+
     for (let day = 0; day < 30; day++) {
       const date = new Date(now.getTime() - (day * 24 * 60 * 60 * 1000));
       date.setHours(12, 0, 0, 0); 
       
-      for (let b = 0; b < 3; b++) {
-        const source = faker.helpers.arrayElement(villageCenters);
-        const dest = faker.helpers.arrayElement(chillingCenters);
-        const status = day === 0 ? BatchStatus.IN_TRANSIT : BatchStatus.RECEIVED;
+      for (let b = 0; b < 5; b++) {
+        // Mix of Village -> Chilling, Chilling -> District, District -> Business
+        const routeType = faker.helpers.arrayElement(['VC_CC', 'CC_DF', 'DF_BIZ']);
+        let source, dest;
+        if (routeType === 'VC_CC') {
+          source = faker.helpers.arrayElement(villageCenters);
+          dest = faker.helpers.arrayElement(chillingCenters);
+        } else if (routeType === 'CC_DF') {
+          source = faker.helpers.arrayElement(chillingCenters);
+          dest = faker.helpers.arrayElement(districtFacilities);
+        } else {
+          source = faker.helpers.arrayElement(districtFacilities);
+          dest = faker.helpers.arrayElement(businesses);
+        }
+
+        const batchStatus = day === 0 ? BatchStatus.IN_TRANSIT : BatchStatus.RECEIVED;
+        const transferStatus = day === 0 ? TransferStatus.IN_TRANSIT : TransferStatus.RECEIVED;
+        
+        const batchId = faker.string.uuid();
+        const dispatchedQty = faker.number.float({ min: 100, max: 1000, fractionDigits: 1 });
         
         batchesData.push({
-          id: faker.string.uuid(),
+          id: batchId,
           source_facility_id: source.id,
           destination_facility_id: dest.id,
-          quantity_liters: faker.number.float({ min: 100, max: 1000, fractionDigits: 1 }),
-          status,
+          quantity_liters: dispatchedQty,
+          status: batchStatus,
           created_at: date,
+          dispatched_at: date,
+          received_at: day === 0 ? null : new Date(date.getTime() + 4 * 60 * 60 * 1000)
+        });
+
+        // Some discrepancy logic for anomalous routes
+        let receivedQty = day === 0 ? null : dispatchedQty;
+        let finalTransferStatus: TransferStatus = transferStatus;
+        if (day !== 0 && Math.random() > 0.8) { // 20% anomalous
+           receivedQty = dispatchedQty * 0.8; // 20% loss
+           finalTransferStatus = TransferStatus.DISCREPANCY;
+        }
+
+        transfersData.push({
+          id: faker.string.uuid(),
+          batch_id: batchId,
+          source_facility_id: source.id,
+          destination_facility_id: dest.id,
+          dispatched_quantity: dispatchedQty,
+          received_quantity: receivedQty,
+          status: finalTransferStatus,
           dispatched_at: date,
           received_at: day === 0 ? null : new Date(date.getTime() + 4 * 60 * 60 * 1000)
         });
       }
     }
     await prisma.batch.createMany({ data: batchesData });
+    await prisma.transfer.createMany({ data: transfersData });
 
     // Anomalies
     for(let i = 0; i < 5; i++) {
