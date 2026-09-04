@@ -18,14 +18,46 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 import { faker } from '@faker-js/faker';
 
-const DISTRICTS = [
-  'Ahmednagar', 'Akola', 'Amravati', 'Chhatrapati Sambhajinagar', 'Beed', 'Bhandara',
-  'Buldhana', 'Chandrapur', 'Dhule', 'Gadchiroli', 'Gondia', 'Hingoli',
-  'Jalgaon', 'Jalna', 'Kolhapur', 'Latur', 'Mumbai City', 'Mumbai Suburban',
-  'Nagpur', 'Nanded', 'Nandurbar', 'Dharashiv', 'Palghar', 'Parbhani',
-  'Pune', 'Raigad', 'Ratnagiri', 'Sangli', 'Satara', 'Sindhudurg',
-  'Solapur', 'Thane', 'Wardha', 'Washim', 'Yavatmal', 'Nashik'
-];
+const DISTRICT_COORDS: Record<string, { lat: number, lng: number }> = {
+  'Ahmednagar': { lat: 19.0948, lng: 74.7480 },
+  'Akola': { lat: 20.7059, lng: 77.0082 },
+  'Amravati': { lat: 20.9320, lng: 77.7523 },
+  'Chhatrapati Sambhajinagar': { lat: 19.8762, lng: 75.3433 },
+  'Beed': { lat: 18.9891, lng: 75.7601 },
+  'Bhandara': { lat: 21.1777, lng: 79.6582 },
+  'Buldhana': { lat: 20.5312, lng: 76.1834 },
+  'Chandrapur': { lat: 19.9615, lng: 79.2961 },
+  'Dhule': { lat: 20.9042, lng: 74.7749 },
+  'Gadchiroli': { lat: 20.1849, lng: 79.9948 },
+  'Gondia': { lat: 21.4624, lng: 80.1982 },
+  'Hingoli': { lat: 19.7161, lng: 77.1472 },
+  'Jalgaon': { lat: 21.0077, lng: 75.5626 },
+  'Jalna': { lat: 19.8347, lng: 75.8816 },
+  'Kolhapur': { lat: 16.7050, lng: 74.2433 },
+  'Latur': { lat: 18.4088, lng: 76.5604 },
+  'Mumbai City': { lat: 18.9750, lng: 72.8258 },
+  'Mumbai Suburban': { lat: 19.0838, lng: 72.8809 },
+  'Nagpur': { lat: 21.1458, lng: 79.0882 },
+  'Nanded': { lat: 19.1383, lng: 77.3210 },
+  'Nandurbar': { lat: 21.3735, lng: 74.2483 },
+  'Dharashiv': { lat: 18.1856, lng: 76.0419 },
+  'Palghar': { lat: 19.6967, lng: 72.7699 },
+  'Parbhani': { lat: 19.2699, lng: 76.7748 },
+  'Pune': { lat: 18.5204, lng: 73.8567 },
+  'Raigad': { lat: 18.5158, lng: 72.9288 },
+  'Ratnagiri': { lat: 16.9902, lng: 73.3120 },
+  'Sangli': { lat: 16.8524, lng: 74.5815 },
+  'Satara': { lat: 17.6805, lng: 74.0183 },
+  'Sindhudurg': { lat: 16.1627, lng: 73.6983 },
+  'Solapur': { lat: 17.6599, lng: 75.9064 },
+  'Thane': { lat: 19.2183, lng: 72.9781 },
+  'Wardha': { lat: 20.7453, lng: 78.6022 },
+  'Washim': { lat: 20.1065, lng: 77.1279 },
+  'Yavatmal': { lat: 20.3888, lng: 78.1204 },
+  'Nashik': { lat: 19.9975, lng: 73.7898 },
+};
+
+const DISTRICTS = Object.keys(DISTRICT_COORDS);
 
 async function main() {
   console.log('Starting massive data seed for Maharashtra...');
@@ -140,8 +172,8 @@ async function main() {
           type: FacilityType.VILLAGE_COLLECTION_CENTER,
           district,
           organization_id: org.id,
-          latitude: faker.location.latitude({ max: 22, min: 15 }),
-          longitude: faker.location.longitude({ max: 80, min: 72 }),
+          latitude: faker.location.latitude({ max: DISTRICT_COORDS[district].lat + 0.3, min: DISTRICT_COORDS[district].lat - 0.3 }),
+          longitude: faker.location.longitude({ max: DISTRICT_COORDS[district].lng + 0.3, min: DISTRICT_COORDS[district].lng - 0.3 }),
         }
       }));
     }
@@ -154,8 +186,8 @@ async function main() {
           type: FacilityType.CHILLING_CENTER,
           district,
           organization_id: org.id,
-          latitude: faker.location.latitude({ max: 22, min: 15 }),
-          longitude: faker.location.longitude({ max: 80, min: 72 }),
+          latitude: faker.location.latitude({ max: DISTRICT_COORDS[district].lat + 0.3, min: DISTRICT_COORDS[district].lat - 0.3 }),
+          longitude: faker.location.longitude({ max: DISTRICT_COORDS[district].lng + 0.3, min: DISTRICT_COORDS[district].lng - 0.3 }),
         }
       }));
     }
@@ -265,8 +297,8 @@ async function main() {
           type: FacilityType.DISTRICT_FACILITY,
           district,
           organization_id: org.id,
-          latitude: faker.location.latitude({ max: 22, min: 15 }),
-          longitude: faker.location.longitude({ max: 80, min: 72 }),
+          latitude: faker.location.latitude({ max: DISTRICT_COORDS[district].lat + 0.3, min: DISTRICT_COORDS[district].lat - 0.3 }),
+          longitude: faker.location.longitude({ max: DISTRICT_COORDS[district].lng + 0.3, min: DISTRICT_COORDS[district].lng - 0.3 }),
         }
       }));
     }
@@ -278,8 +310,8 @@ async function main() {
           type: FacilityType.BUSINESS_RECEIVING_FACILITY,
           district,
           organization_id: org.id,
-          latitude: faker.location.latitude({ max: 22, min: 15 }),
-          longitude: faker.location.longitude({ max: 80, min: 72 }),
+          latitude: faker.location.latitude({ max: DISTRICT_COORDS[district].lat + 0.3, min: DISTRICT_COORDS[district].lat - 0.3 }),
+          longitude: faker.location.longitude({ max: DISTRICT_COORDS[district].lng + 0.3, min: DISTRICT_COORDS[district].lng - 0.3 }),
         }
       }));
     }
@@ -344,17 +376,33 @@ async function main() {
     await prisma.batch.createMany({ data: batchesData });
     await prisma.transfer.createMany({ data: transfersData });
 
-    // Anomalies
+    // Anomalies for Facilities
     for(let i = 0; i < 5; i++) {
       await prisma.anomalyEvent.create({
         data: {
-          anomaly_type: faker.helpers.arrayElement(['VOLUME_SPIKE', 'FAT_DROP', 'ROUTE_DEVIATION']),
+          anomaly_type: faker.helpers.arrayElement(['VOLUME_SPIKE', 'FAT_DROP']),
           severity: faker.helpers.arrayElement([AnomalySeverity.LOW, AnomalySeverity.MEDIUM, AnomalySeverity.HIGH, AnomalySeverity.CRITICAL]),
           risk_score: faker.number.int({ min: 40, max: 99 }),
           entity_type: 'FACILITY',
           entity_id: faker.helpers.arrayElement(villageCenters).id,
           status: 'ACTIVE',
           created_at: faker.date.recent({ days: 30 })
+        }
+      });
+    }
+
+    // Anomalies for Transfers
+    const anomalousTransfers = transfersData.filter(t => t.status === TransferStatus.DISCREPANCY);
+    for(const t of anomalousTransfers.slice(0, 5)) {
+      await prisma.anomalyEvent.create({
+        data: {
+          anomaly_type: 'ROUTE_DEVIATION',
+          severity: faker.helpers.arrayElement([AnomalySeverity.HIGH, AnomalySeverity.CRITICAL]),
+          risk_score: faker.number.int({ min: 70, max: 99 }),
+          entity_type: 'TRANSFER',
+          entity_id: t.id,
+          status: 'ACTIVE',
+          created_at: t.dispatched_at
         }
       });
     }

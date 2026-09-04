@@ -56,10 +56,24 @@ export class MapService {
       }
     });
 
+    const transferIds = transfers.map(t => t.id);
+    const anomalies = await prisma.anomalyEvent.findMany({
+      where: {
+        entity_type: 'TRANSFER',
+        entity_id: { in: transferIds },
+        status: 'ACTIVE'
+      }
+    });
+
+    const anomalyMap = new Map();
+    anomalies.forEach(a => anomalyMap.set(a.entity_id, a));
+
     return transfers.map(t => {
       let status = 'NORMAL';
       if (t.status === 'IN_TRANSIT' || t.status === 'DISPATCHED') status = 'IN_TRANSIT';
       if (t.status === 'DISCREPANCY') status = 'ANOMALOUS';
+
+      const anomaly = anomalyMap.get(t.id);
 
       return {
         id: t.id,
@@ -70,10 +84,11 @@ export class MapService {
         status,
         dispatchedL: Number(t.dispatched_quantity),
         receivedL: t.received_quantity ? Number(t.received_quantity) : 0,
-        riskScore: t.status === 'DISCREPANCY' ? 80 : 10,
-        alerts: t.status === 'DISCREPANCY' ? ['Transfer Discrepancy'] : [],
+        riskScore: t.status === 'DISCREPANCY' ? (anomaly ? anomaly.risk_score : 80) : 10,
+        alerts: t.status === 'DISCREPANCY' ? ['Transfer Discrepancy detected'] : [],
         lastTransferAt: t.dispatched_at.toISOString(),
-        batchId: t.batch_id
+        batchId: t.batch_id,
+        anomalyId: anomaly ? anomaly.id : undefined
       };
     });
   }
