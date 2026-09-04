@@ -61,7 +61,11 @@ export class BatchRepository {
 
   async getAllBatches() {
     return prisma.batch.findMany({
-      include: { items: true },
+      include: { 
+        items: true,
+        source_facility: { select: { name: true, type: true } },
+        destination_facility: { select: { name: true, type: true } }
+      },
       orderBy: { created_at: 'desc' }
     });
   }

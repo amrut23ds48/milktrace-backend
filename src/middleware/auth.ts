@@ -46,7 +46,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
           'collection.view', 'collection.create',
           'farmer.view', 'farmer.create',
           'facility.view',
-          'batch.view', 'batch.create',
+          'batch.view', 'batch.create', 'transfer.create'
         ],
       };
       return next();
