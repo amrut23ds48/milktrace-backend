@@ -17,6 +17,7 @@ export interface CreateUserData {
   organizationId: string;
   roleId: string;
   facilityId?: string;
+  password_hash?: string;
 }
 
 /** Select clause that explicitly excludes password_hash from query results. */
@@ -53,6 +54,7 @@ export async function createUser(data: CreateUserData): Promise<SafeUser> {
       organization_id: orgId,
       role_id: data.roleId,
       facility_id: data.facilityId || null,
+      password_hash: data.password_hash,
     },
     select: safeUserSelect,
   });

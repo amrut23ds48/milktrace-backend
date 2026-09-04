@@ -8,6 +8,7 @@ export interface CreateUserInput {
   name: string;
   email?: string;
   phone?: string;
+  password?: string;  // Required for new users; used to create Supabase Auth account
   organizationId: string;
   roleId: string;
   facilityId?: string;

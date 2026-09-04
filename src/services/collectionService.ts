@@ -1,5 +1,7 @@
 import { CreateCollectionInput, CollectionResponse } from '../types/collection.types';
-import { createCollection, findAllCollections } from '../repositories/collectionRepository';
+import { createCollection, findAllCollections, findCollectionsByFacility, findCollectionById, findDailySummaryByFacility, cancelCollection as repoCancelCollection } from '../repositories/collectionRepository';
+import { calculateExpectedQuality, evaluateQualityRisk } from './anomalyEngine';
+import { prisma } from '../lib/prisma';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import { findFarmerById } from '../repositories/farmerRepository';
 import { findFacilityById } from '../repositories/facilityRepository';
@@ -35,11 +37,65 @@ export async function recordCollection(input: CreateCollectionInput): Promise<Co
 
   const collection = await createCollection(input);
 
+  // Background Anomaly Check
+  if (input.quality && input.quality.fat_percent && input.quality.snf_percent) {
+    (async () => {
+      try {
+        const animals = await prisma.animal.findMany({ where: { farmer_id: input.farmer_id } });
+        const animalInputs = animals.map(a => ({
+          volume: Number(a.expected_daily_yield) || 0,
+          fat: Number(a.expected_fat) || 0,
+          snf: Number(a.expected_snf) || 0
+        }));
+        
+        const expected = calculateExpectedQuality(animalInputs);
+        if (expected.totalVolume > 0) {
+          const risk = evaluateQualityRisk(expected, input.quality!.fat_percent!, input.quality!.snf_percent!);
+          
+          if (risk.riskScore > 0) {
+            await prisma.anomalyEvent.create({
+              data: {
+                anomaly_type: 'QUALITY_DROP',
+                severity: risk.riskLevel === 'CRITICAL' ? 'CRITICAL' : risk.riskLevel === 'HIGH' ? 'HIGH' : risk.riskLevel === 'MEDIUM' ? 'MEDIUM' : 'LOW',
+                risk_score: risk.riskScore,
+                entity_type: 'MILK_COLLECTION',
+                entity_id: collection.id,
+                status: 'ACTIVE',
+                details: { message: `Quality deviation: ${risk.flags.join(', ')}` }
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to run anomaly engine on collection', collection.id, err);
+      }
+    })();
+  }
+
   return mapCollectionToResponse(collection);
 }
 
-export async function getCollections(): Promise<CollectionResponse[]> {
-  const collections = await findAllCollections();
+export async function getCollectionsByFacility(facilityId: string, opts?: { date?: string; session?: 'MORNING' | 'EVENING'; status?: string }): Promise<CollectionResponse[]> {
+  const collections = await findCollectionsByFacility(facilityId, opts);
+  return collections.map(c => mapCollectionToResponse(c));
+}
+
+export async function getCollectionById(id: string): Promise<CollectionResponse | null> {
+  const c = await findCollectionById(id);
+  return c ? mapCollectionToResponse(c) : null;
+}
+
+export async function getDailySummary(facilityId: string, date: string) {
+  return await findDailySummaryByFacility(facilityId, date);
+}
+
+export async function cancelCollection(id: string, reason: string, actorId: string) {
+  const c = await repoCancelCollection(id, reason, actorId);
+  return mapCollectionToResponse(c);
+}
+
+export async function getCollections(opts?: { date?: string; session?: 'MORNING' | 'EVENING'; status?: string }): Promise<CollectionResponse[]> {
+  const collections = await findAllCollections(opts);
   return collections.map(c => mapCollectionToResponse(c));
 }
 
