@@ -9,7 +9,8 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 /**
  * POST /api/v1/auth/login
- * Validates credentials and returns a JWT payload containing roles and permissions.
+ * Validates credentials (email/phone + bcrypt password) and returns a signed JWT.
+ * Users without a password_hash were created for Supabase Auth and cannot log in here.
  */
 router.post('/login', async (req: Request, res: Response): Promise<any> => {
   try {
@@ -19,7 +20,7 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ error: 'Identifier (email/phone) and password are required' });
     }
 
-    // Find user by email or phone
+    // Find active user by email or phone
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -31,7 +32,9 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
       include: {
         role: {
           include: {
-            permissions: true
+            permissions: {
+              include: { permission: true }
+            }
           }
         }
       }
@@ -41,22 +44,32 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
       return res.status(401).json({ error: 'Invalid credentials or inactive account' });
     }
 
-    // Since we are migrating to Supabase Auth, local login simply bypasses password check.
-    // In production, this route is deprecated.
+    // Verify bcrypt password
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'This account uses Supabase Auth. Please log in via the Supabase portal.' });
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-    // Extract permissions
-    const permissions = user.role.permissions.map((rp: any) => rp.permission);
+    // Extract permission codes from the nested RolePermission → Permission join
+    const permissions = user.role.permissions
+      .map((rp: any) => rp.permission?.code)
+      .filter(Boolean);
 
-    // Generate JWT
+    // Sign JWT
     const payload = {
       userId: user.id,
       roleId: user.role_id,
       organizationId: user.organization_id,
       facilityId: user.facility_id,
-      permissions
+      permissions,
     };
-
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] });
+
+    // Update last_login_at (fire-and-forget)
+    prisma.user.update({ where: { id: user.id }, data: { last_login_at: new Date() } }).catch(() => {});
 
     return res.status(200).json({
       message: 'Login successful',

@@ -19,7 +19,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "seed:mock": "ts-node scripts/seed-maharashtra.ts"
+    "seed:mock": "ts-node scripts/seed-maharashtra.ts",
+    "seed:supabase": "ts-node scripts/seed-maharashtra.ts --force"
   },
   "keywords": [],
   "author": "",

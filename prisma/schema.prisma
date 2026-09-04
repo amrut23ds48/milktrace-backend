@@ -15,6 +15,7 @@ datasource db {
   provider = "postgresql"
 }
 
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 /// Top-level classification of an Organization.
@@ -227,6 +228,7 @@ model User {
   name            String
   phone           String?      @unique
   email           String?      @unique
+  password_hash   String?      // bcrypt hash; null for Supabase-auth-only users
   status          EntityStatus @default(ACTIVE)
   last_login_at   DateTime?
   created_at      DateTime     @default(now())

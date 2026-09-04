@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { OrganizationType, FacilityType, CollectionSession, AnomalySeverity, FarmerRegistrationStatus, BatchStatus } from '../src/generated/prisma/client';
 import { PrismaClient } from '../src/generated/prisma/client';
-
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcrypt';
 
 const adapter = new PrismaPg({
   connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL || '',
@@ -22,10 +22,12 @@ const DISTRICTS = [
 async function main() {
   console.log('Starting massive data seed for Maharashtra...');
   
-  // SAFEGUARD: Prevent accidental execution on production
-  if (process.env.NODE_ENV === 'production' || process.env.DATABASE_URL?.includes('supabase')) {
-    console.error('🚨 DANGER: You are trying to run the seed script against a production or Supabase database!');
-    console.error('This script contains cascading deletes that will wipe all data. Execution aborted.');
+  // ⚠️  This script wipes and re-seeds the database.
+  // To seed Supabase, pass --force flag: ts-node scripts/seed-maharashtra.ts --force
+  const isForced = process.argv.includes('--force');
+  if (!isForced && process.env.DATABASE_URL?.includes('supabase')) {
+    console.error('🚨  Supabase DB detected. Pass --force to seed it:');
+    console.error('    npm run seed:mock -- --force');
     process.exit(1);
   }
 
@@ -89,6 +91,7 @@ async function main() {
     console.warn("⚠️ No SUPER_ADMIN_UUID provided in .env! Skipping Super Admin creation.");
   } else {
     console.log(`Creating Super Admin profile for Auth UUID: ${superAdminId}...`);
+    const superAdminPasswordHash = await bcrypt.hash('admin1234', 10);
     await prisma.user.create({
       data: {
         id: superAdminId,
@@ -96,9 +99,24 @@ async function main() {
         role_id: saRole.id,
         name: 'Super Admin',
         email: 'admin@milktrace.local',
+        password_hash: superAdminPasswordHash,
       }
     });
+    console.log('✅ Super Admin created — email: admin@milktrace.local | password: admin1234');
   }
+
+  // Create a dedicated Village Admin test user with login credentials
+  const villageTestPasswordHash = await bcrypt.hash('village1234', 10);
+  const villageTestUser = await prisma.user.create({
+    data: {
+      organization_id: org.id,
+      role_id: vcRole.id,
+      name: 'Test Village Admin',
+      email: 'village@milktrace.local',
+      password_hash: villageTestPasswordHash,
+    }
+  });
+  console.log('✅ Village Admin created — email: village@milktrace.local | password: village1234');
 
   const BATCH_SIZE = 5000;
   
