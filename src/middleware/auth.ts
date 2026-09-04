@@ -14,56 +14,41 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
     const token = authHeader.split(' ')[1];
     
-    // Dev bypass: auto-login as Super Admin from the real database
+    // ─── Dev Bypass (no DB query — hardcoded permissions for speed & reliability) ───
+    // Super Admin mock: has system.view which grants god-mode in requirePermission
     if (token === 'mock-jwt-token') {
-      const superAdmin = await prisma.user.findFirst({
-        where: { role: { name: 'Super Admin' } },
-        include: { role: { include: { permissions: true } } }
-      });
-      if (superAdmin) {
-        req.user = {
-          userId: superAdmin.id,
-          roleId: superAdmin.role_id,
-          organizationId: superAdmin.organization_id,
-          facilityId: superAdmin.facility_id,
-          permissions: superAdmin.role.permissions.map((rp: any) => rp.permission?.code ?? rp.permission),
-        };
-      } else {
-        // Fallback if no super admin found
-        req.user = {
-          userId: 'dev-super-admin',
-          roleId: 'SUPER_ADMIN',
-          organizationId: 'dev-org',
-          facilityId: null,
-          permissions: ['system.view', 'collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'batch.view', 'batch.create', 'facility.view', 'facility.create', 'user.view', 'user.create', 'role.view', 'role.create'],
-        };
-      }
+      req.user = {
+        userId: 'dev-super-admin',
+        roleId: 'SUPER_ADMIN',
+        organizationId: 'dev-org',
+        facilityId: null,
+        permissions: [
+          'system.view',
+          'user.create', 'user.view', 'user.update', 'user.delete',
+          'role.create', 'role.view', 'role.update', 'role.delete',
+          'facility.create', 'facility.view', 'facility.update', 'facility.delete',
+          'farmer.create', 'farmer.view',
+          'collection.create', 'collection.view',
+          'batch.create', 'batch.view', 'batch.dispatch',
+        ],
+      };
       return next();
     }
 
-    // Dev bypass: auto-login as Village Admin from the real database
+    // Village Admin mock: scoped permissions only
     if (token === 'mock-jwt-token-village') {
-      const villageAdmin = await prisma.user.findFirst({
-        where: { role: { name: 'Village Admin' } },
-        include: { role: { include: { permissions: true } } }
-      });
-      if (villageAdmin) {
-        req.user = {
-          userId: villageAdmin.id,
-          roleId: villageAdmin.role_id,
-          organizationId: villageAdmin.organization_id,
-          facilityId: villageAdmin.facility_id,
-          permissions: villageAdmin.role.permissions.map((rp: any) => rp.permission?.code ?? rp.permission),
-        };
-      } else {
-        req.user = {
-          userId: 'dev-village-admin',
-          roleId: 'VILLAGE_ADMIN',
-          organizationId: 'dev-org',
-          facilityId: null,
-          permissions: ['collection.view', 'collection.create', 'farmer.view', 'farmer.create', 'facility.view'],
-        };
-      }
+      req.user = {
+        userId: 'dev-village-admin',
+        roleId: 'VILLAGE_ADMIN',
+        organizationId: 'dev-org',
+        facilityId: null,
+        permissions: [
+          'collection.view', 'collection.create',
+          'farmer.view', 'farmer.create',
+          'facility.view',
+          'batch.view', 'batch.create',
+        ],
+      };
       return next();
     }
 
