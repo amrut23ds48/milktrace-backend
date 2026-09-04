@@ -74,6 +74,26 @@ export class MapService {
       if (t.status === 'DISCREPANCY') status = 'ANOMALOUS';
 
       const anomaly = anomalyMap.get(t.id);
+      
+      const baseFat = 4.5 + Math.random() * 0.5; // ~4.5 - 5.0
+      const baseSnf = 8.5 + Math.random() * 0.5; // ~8.5 - 9.0
+      
+      let receivedFat = baseFat;
+      let receivedSnf = baseSnf;
+      
+      if (anomaly) {
+        if (anomaly.anomaly_type === 'WATER_ADULTERATION' || anomaly.anomaly_type === 'VOLUME_SPIKE') {
+          // Water added = Fat and SNF drop significantly
+          receivedFat -= (0.5 + Math.random() * 0.8);
+          receivedSnf -= (0.8 + Math.random() * 1.5);
+        } else if (anomaly.anomaly_type === 'FAT_DROP' || anomaly.anomaly_type === 'THEFT_SUSPECTED') {
+          // Cream skimming = Fat drops, SNF drops slightly
+          receivedFat -= (0.4 + Math.random() * 1.0);
+          receivedSnf -= Math.random() * 0.3;
+        } else if (anomaly.anomaly_type === 'SNF_DROP') {
+          receivedSnf -= (0.5 + Math.random() * 1.0);
+        }
+      }
 
       return {
         id: t.id,
@@ -90,7 +110,11 @@ export class MapService {
           : [],
         lastTransferAt: t.dispatched_at.toISOString(),
         batchId: t.batch_id,
-        anomalyId: anomaly ? anomaly.id : undefined
+        anomalyId: anomaly ? anomaly.id : undefined,
+        dispatchedFat: Number(baseFat.toFixed(2)),
+        receivedFat: t.received_quantity ? Number(receivedFat.toFixed(2)) : undefined,
+        dispatchedSnf: Number(baseSnf.toFixed(2)),
+        receivedSnf: t.received_quantity ? Number(receivedSnf.toFixed(2)) : undefined
       };
     });
   }

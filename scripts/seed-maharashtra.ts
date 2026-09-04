@@ -401,7 +401,7 @@ async function main() {
 
     // Anomalies for Transfers
     const anomalousTransfers = transfersData.filter(t => t.status === TransferStatus.DISCREPANCY);
-    for(const t of anomalousTransfers.slice(0, 5)) {
+    for(const t of anomalousTransfers) {
       
       let anomalyType = 'ROUTE_DEVIATION';
       if (t.received_quantity && t.dispatched_quantity) {
