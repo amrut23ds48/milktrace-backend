@@ -352,12 +352,20 @@ async function main() {
           received_at: day === 0 ? null : new Date(date.getTime() + 4 * 60 * 60 * 1000)
         });
 
-        // Some discrepancy logic for anomalous routes
         let receivedQty = day === 0 ? null : dispatchedQty;
         let finalTransferStatus: TransferStatus = transferStatus;
-        if (day !== 0 && Math.random() > 0.8) { // 20% anomalous
-           receivedQty = dispatchedQty * 0.8; // 20% loss
+        if (day !== 0 && Math.random() > 0.8) { // 20% chance of anomaly
            finalTransferStatus = TransferStatus.DISCREPANCY;
+           const isSpike = Math.random() > 0.5;
+           if (isSpike) {
+             // 5-15% increase (e.g. water added)
+             const spikePct = 1.05 + (Math.random() * 0.10);
+             receivedQty = dispatchedQty * spikePct;
+           } else {
+             // 10-30% loss (theft or leakage)
+             const dropPct = 0.70 + (Math.random() * 0.20);
+             receivedQty = dispatchedQty * dropPct;
+           }
         }
 
         transfersData.push({
@@ -394,9 +402,19 @@ async function main() {
     // Anomalies for Transfers
     const anomalousTransfers = transfersData.filter(t => t.status === TransferStatus.DISCREPANCY);
     for(const t of anomalousTransfers.slice(0, 5)) {
+      
+      let anomalyType = 'ROUTE_DEVIATION';
+      if (t.received_quantity && t.dispatched_quantity) {
+         if (Number(t.received_quantity) > Number(t.dispatched_quantity)) {
+           anomalyType = faker.helpers.arrayElement(['VOLUME_SPIKE', 'WATER_ADULTERATION']);
+         } else if (Number(t.received_quantity) < Number(t.dispatched_quantity)) {
+           anomalyType = faker.helpers.arrayElement(['VOLUME_DROP', 'FAT_DROP', 'SNF_DROP', 'THEFT_SUSPECTED']);
+         }
+      }
+
       await prisma.anomalyEvent.create({
         data: {
-          anomaly_type: 'ROUTE_DEVIATION',
+          anomaly_type: anomalyType,
           severity: faker.helpers.arrayElement([AnomalySeverity.HIGH, AnomalySeverity.CRITICAL]),
           risk_score: faker.number.int({ min: 70, max: 99 }),
           entity_type: 'TRANSFER',

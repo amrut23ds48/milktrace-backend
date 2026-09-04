@@ -85,7 +85,9 @@ export class MapService {
         dispatchedL: Number(t.dispatched_quantity),
         receivedL: t.received_quantity ? Number(t.received_quantity) : 0,
         riskScore: t.status === 'DISCREPANCY' ? (anomaly ? anomaly.risk_score : 80) : 10,
-        alerts: t.status === 'DISCREPANCY' ? ['Transfer Discrepancy detected'] : [],
+        alerts: t.status === 'DISCREPANCY' 
+          ? [anomaly ? `Alert: ${anomaly.anomaly_type.replace(/_/g, ' ')}` : 'Volume mismatch detected'] 
+          : [],
         lastTransferAt: t.dispatched_at.toISOString(),
         batchId: t.batch_id,
         anomalyId: anomaly ? anomaly.id : undefined
