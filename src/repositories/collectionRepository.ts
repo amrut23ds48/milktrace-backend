@@ -31,10 +31,9 @@ export async function createCollection(input: CreateCollectionInput): Promise<Mi
 export async function findAllCollections(opts?: { date?: string; session?: 'MORNING' | 'EVENING'; status?: string }): Promise<MilkCollection[]> {
   const where: Prisma.MilkCollectionWhereInput = {};
   if (opts?.date) {
-    const start = new Date(opts.date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(opts.date);
-    end.setHours(23, 59, 59, 999);
+    // Parse date as UTC day range (avoids IST/UTC drift where setHours would use local tz)
+    const start = new Date(`${opts.date}T00:00:00.000Z`);
+    const end = new Date(`${opts.date}T23:59:59.999Z`);
     where.collection_timestamp = { gte: start, lte: end };
   }
   if (opts?.session) {
@@ -59,10 +58,8 @@ export async function findAllCollections(opts?: { date?: string; session?: 'MORN
 export async function findCollectionsByFacility(facilityId: string, opts?: { date?: string; session?: 'MORNING' | 'EVENING'; status?: string }): Promise<MilkCollection[]> {
   const where: Prisma.MilkCollectionWhereInput = { facility_id: facilityId };
   if (opts?.date) {
-    const start = new Date(opts.date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(opts.date);
-    end.setHours(23, 59, 59, 999);
+    const start = new Date(`${opts.date}T00:00:00.000Z`);
+    const end = new Date(`${opts.date}T23:59:59.999Z`);
     where.collection_timestamp = { gte: start, lte: end };
   }
   if (opts?.session) {
